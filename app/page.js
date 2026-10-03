@@ -1,301 +1,264 @@
-'use client';
-import { useState } from 'react';
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-const AIRPORTS = [
-  { code: 'LHR', name: 'LHR - London Heathrow Airport' },
-  { code: 'JFK', name: 'JFK - John F. Kennedy Airport' },
-  { code: 'DXB', name: 'DXB - Dubai International Airport' },
-  { code: 'AMD', name: 'AMD - Sardar Vallabhbhai Patel International' },
-  { code: 'DEL', name: 'DEL - Indira Gandhi International Airport' },
-  { code: 'BOM', name: 'BOM - Chhatrapati Shivaji Maharaj Airport' }
-];
+body {
+  background-color: #0b111e;
+  color: #f8fafc;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
 
-export default function Home() {
-  const [flights, setFlights] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [origin, setOrigin] = useState('LHR');
-  const [destination, setDestination] = useState('JFK');
-  const [date, setDate] = useState('2026-11-15');
-  const [cabinClass, setCabinClass] = useState('economy');
-  
-  // Passenger counters
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
-  const [infants, setInfants] = useState(0);
-  const [showPassengerDropdown, setShowPassengerDropdown] = useState(false);
+main {
+  max-width: 900px;
+  margin: 0 auto;
+}
 
-  // Booking Flow States
-  const [selectedOffer, setSelectedOffer] = useState(null);
-  const [passengerDetails, setPassengerDetails] = useState({
-    firstName: '',
-    lastName: '',
-    dob: '',
-    gender: 'm',
-    passportNumber: '',
-    email: '',
-    phone: ''
-  });
-  const [bookingSuccess, setBookingSuccess] = useState(false);
+h1 {
+  text-align: center;
+  font-size: 2.6rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #22d3ee, #0ea5e9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setFlights([]);
-    setSelectedOffer(null);
-    setBookingSuccess(false);
+p {
+  text-align: center;
+  color: #64748b;
+  font-size: 1rem;
+  margin-bottom: 40px;
+  font-weight: 500;
+}
 
-    const passengersArray = [];
-    for(let i=0; i<adults; i++) passengersArray.push({ type: 'adult' });
-    for(let i=0; i<children; i++) passengersArray.push({ type: 'child' });
-    for(let i=0; i<infants; i++) passengersArray.push({ type: 'infant_without_seat' });
-    
-    // Smooth skeleton processing animation delay
-    await new Promise((resolve) => setTimeout(resolve, 2200));
+form {
+  background: #141b2d;
+  border: 1px solid #222f47;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+  align-items: end;
+}
 
-    try {
-      const res = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ origin, destination, date, cabin_class: cabinClass, passengers: passengersArray }),
-      });
-      const data = await res.json();
-      
-      if (data?.data?.offers && data.data.offers.length > 0) {
-        setFlights(data.data.offers);
-      } else {
-        setFlights([
-          { id: 'off_live_001', owner: { name: 'British Airways' }, total_amount: '450.00', total_currency: 'GBP' },
-          { id: 'off_live_002', owner: { name: 'Virgin Atlantic' }, total_amount: '485.50', total_currency: 'GBP' },
-          { id: 'off_live_003', owner: { name: 'Air India' }, total_amount: '520.00', total_currency: 'GBP' }
-        ]);
-      }
-    } catch (err) {
-      setFlights([
-        { id: 'off_sim_001', owner: { name: 'British Airways' }, total_amount: '450.00', total_currency: 'GBP' },
-        { id: 'off_sim_002', owner: { name: 'Virgin Atlantic' }, total_amount: '485.50', total_currency: 'GBP' }
-      ]);
-    }
-    setLoading(false);
-  };
+form div {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
-  const handleFinalBookingSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    // Simulate API registration to Duffel for ticket generation
-    setTimeout(() => {
-      setLoading(false);
-      setBookingSuccess(true);
-    }, 2500);
-  };
+label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #38bdf8;
+  margin-bottom: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
 
-  const totalPassengers = adults + children + infants;
+select, input, .passenger-trigger {
+  width: 100%;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.25s ease;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
 
-  return (
-    <main>
-      <h1>Perfect Motion Travel Portal</h1>
-      <p>Advanced Flight Searching & Booking Engine</p>
+/* 📅 Luxury Customized Calendar UI Fields styling override */
+input[type="date"] {
+  position: relative;
+  background-image: linear-gradient(to right, #1e293b, #1e293b);
+  color-scheme: dark; /* Forces browser date popup to dark-mode theme */
+}
 
-      {!selectedOffer && !bookingSuccess && (
-        <>
-          <form onSubmit={handleSearch}>
-            <div>
-              <label>From (Origin)</label>
-              <select value={origin} onChange={(e) => setOrigin(e.target.value)}>
-                {AIRPORTS.map((ap) => (
-                  <option key={ap.code} value={ap.code}>{ap.name}</option>
-                ))}
-              </select>
-            </div>
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background-color: #22d3ee;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
 
-            <div>
-              <label>To (Destination)</label>
-              <select value={destination} onChange={(e) => setDestination(e.target.value)}>
-                {AIRPORTS.map((ap) => (
-                  <option key={ap.code} value={ap.code}>{ap.name}</option>
-                ))}
-              </select>
-            </div>
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  transform: scale(1.1);
+  background-color: #0ea5e9;
+}
 
-            <div>
-              <label>Departure Date</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-            </div>
+select:focus, input:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
+}
 
-            <div>
-              <label>Ticket Cabin Class</label>
-              <select value={cabinClass} onChange={(e) => setCabinClass(e.target.value)}>
-                <option value="economy">Economy Class</option>
-                <option value="premium_economy">Premium Economy</option>
-                <option value="business">Business Class</option>
-                <option value="first">First Class</option>
-              </select>
-            </div>
+.passenger-trigger {
+  justify-content: space-between;
+}
 
-            <div style={{ position: 'relative' }}>
-              <label>Passengers</label>
-              <div className="passenger-trigger" onClick={() => setShowPassengerDropdown(!showPassengerDropdown)}>
-                <span>👤 {totalPassengers} Traveler{totalPassengers > 1 ? 's' : ''}</span>
-                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>▼</span>
-              </div>
+.passenger-dropdown {
+  position: absolute;
+  top: 80px;
+  left: 0;
+  right: 0;
+  background-color: #1e293b;
+  border: 1px solid #222f47;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-              {showPassengerDropdown && (
-                <div className="passenger-dropdown">
-                  <div className="passenger-row">
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Adults</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Age 12+</div>
-                    </div>
-                    <div className="counter-actions">
-                      <button type="button" className="counter-btn" onClick={() => setAdults(Math.max(1, adults - 1))}>-</button>
-                      <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{adults}</span>
-                      <button type="button" className="counter-btn" onClick={() => setAdults(adults + 1)}>+</button>
-                    </div>
-                  </div>
+.passenger-row {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
 
-                  <div className="passenger-row">
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Children</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Age 2 - 11</div>
-                    </div>
-                    <div className="counter-actions">
-                      <button type="button" className="counter-btn" onClick={() => setChildren(Math.max(0, children - 1))}>-</button>
-                      <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{children}</span>
-                      <button type="button" className="counter-btn" onClick={() => setChildren(children + 1)}>+</button>
-                    </div>
-                  </div>
+.counter-actions {
+  display: flex;
+  flex-direction: row !important;
+  gap: 12px;
+  align-items: center;
+}
 
-                  <div className="passenger-row">
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Infants</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Under age 2</div>
-                    </div>
-                    <div className="counter-actions">
-                      <button type="button" className="counter-btn" onClick={() => setInfants(Math.max(0, infants - 1))}>-</button>
-                      <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{infants}</span>
-                      <button type="button" className="counter-btn" onClick={() => setInfants(infants + 1)}>+</button>
-                    </div>
-                  </div>
+.counter-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background-color: #334155;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPassengerDropdown(false)}
-                    style={{ backgroundColor: '#0ea5e9', color: '#0f172a', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', marginTop: '5px', cursor: 'pointer' }}
-                  >
-                    Apply Details
-                  </button>
-                </div>
-              )}
-            </div>
+.counter-btn:hover {
+  background-color: #475569;
+}
 
-            <div className="submit-container">
-              <button type="submit" className="search-btn" disabled={loading}>
-                {loading ? '⚡ Scanning Global Route Slices...' : '🔍 Search Live Flights'}
-              </button>
-            </div>
-          </form>
+.submit-container {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+}
 
-          {loading && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {[1, 2, 3].map((n) => (
-                <div key={n} className="skeleton-card animate-pulse">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '50%' }}>
-                    <div className="skeleton-bar" style={{ width: '70%', height: '20px' }}></div>
-                    <div className="skeleton-bar" style={{ width: '45%', height: '12px' }}></div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', width: '30%' }}>
-                    <div className="skeleton-bar" style={{ width: '80%', height: '24px' }}></div>
-                    <div className="skeleton-bar" style={{ width: '50%', height: '16px' }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+.search-btn {
+  background: linear-gradient(to right, #0ea5e9, #22d3ee);
+  color: #0f172a;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px 0 rgba(34, 211, 238, 0.3);
+  width: 100%;
+}
 
-          <div>
-            {!loading && flights.map((offer) => (
-              <div key={offer.id} className="flight-card">
-                <div>
-                  <div className="airline-name">{offer.owner?.name}</div>
-                  <div className="flight-subtext">Flight Bundle Verified • Instant Confirmation ({cabinClass.toUpperCase()})</div>
-                </div>
-                <div className="price-container">
-                  <div className="price-text">{offer.total_amount} {offer.total_currency}</div>
-                  <button 
-type="button"
-className="search-btn"
-style={{ marginTop: '10px', padding: '8px 20px', fontSize: '0.9rem', width: 'auto' }}
-onClick={() => setSelectedOffer(offer)}
->
-Select & Book
+.search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(34, 211, 238, 0.5);
+}
 
+/* ⚡ Perfect Motion Skeleton Searching Animation Effect Styles */
+.skeleton-card {
+  background: #141b2d;
+  border: 1px solid #222f47;
+  padding: 24px;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
+.skeleton-bar {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: loadingShimmer 1.4s infinite linear;
+}
 
-))}
+@keyframes loadingShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
-</>
-)}
-{/* Passenger Checkout Form Dashboard */}
-{selectedOffer && !bookingSuccess && (
-<div style={{ background: '#141b2d', border: '1px solid #222f47', padding: '30px', borderRadius: '20px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
-<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #222f47', paddingBottom: '15px' }}>
+.animate-pulse {
+  animation: pulseEffect 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
 
-<h2 style={{ color: '#22d3ee', fontSize: '1.5rem' }}>Passenger Information
-<p style={{ margin: 0, textAlign: 'left', color: '#64748b', fontSize: '0.85rem' }}>Required by {selectedOffer.owner?.name} for official ticket issue
+@keyframes pulseEffect {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .6; }
+}
 
-<button type="button" onClick={() => setSelectedOffer(null)} style={{ background: '#334155', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', width: 'auto' }}>← Back
-<form onSubmit={handleFinalBookingSubmit} style={{ background: 'transparent', border: 'none', padding: 0, boxShadow: 'none', gap: '16px', marginBottom: 0 }}>
-First Name (As in Passport)
-<input type="text" value={passengerDetails.firstName} onChange={(e) => setPassengerDetails({...passengerDetails, firstName: e.target.value})} placeholder="e.g. JOHN" required />
+/* Finished Ticket Results Cards */
+.flight-card {
+  background: linear-gradient(135deg, #141b2d 0%, #111827 100%);
+  border: 1px solid #222f47;
+  padding: 24px;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  animation: fadeInUp 0.4s ease-out;
+}
 
-Last Name (Surname)
-<input type="text" value={passengerDetails.lastName} onChange={(e) => setPassengerDetails({...passengerDetails, lastName: e.target.value})} placeholder="e.g. DOE" required />
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-Date of Birth
-<input type="date" value={passengerDetails.dob} onChange={(e) => setPassengerDetails({...passengerDetails, dob: e.target.value})} required />
+.airline-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
 
-Gender
-<select value={passengerDetails.gender} onChange={(e) => setPassengerDetails({...passengerDetails, gender: e.target.value})}>
-Male
-Female
+.flight-subtext {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 4px;
+}
 
+.price-text {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #22d3ee;
+}
 
-Passport Number
-<input type="text" value={passengerDetails.passportNumber} onChange={(e) => setPassengerDetails({...passengerDetails, passportNumber: e.target.value.toUpperCase()})} placeholder="e.g. Z1234567" required />
-
-Email Address
-<input type="email" value={passengerDetails.email} onChange={(e) => setPassengerDetails({...passengerDetails, email: e.target.value})} placeholder="john@example.com" required />
-
-<div style={{ gridColumn: '1 / -1' }}>
-Phone Number
-<input type="tel" value={passengerDetails.phone} onChange={(e) => setPassengerDetails({...passengerDetails, phone: e.target.value})} placeholder="+91 98765 43210" required />
-<div className="submit-container" style={{ marginTop: '20px' }}>
-
-{loading ? '⚡ Confirming Secure Seats with Airline API...' : Confirm Order Request • ${selectedOffer.total_amount} ${selectedOffer.total_currency}}
-
-
-
-
-)}
-{/* Flight Order Success Screen Display */}
-{bookingSuccess && (
-<div style={{ background: '#141b2d', border: '1px solid #10b981', padding: '40px', borderRadius: '20px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
-<div style={{ fontSize: '4rem', color: '#10b981', marginBottom: '16px' }}>✓
-<h2 style={{ color: '#10b981', fontSize: '2rem', marginBottom: '8px' }}>Flight Order Created Successfully!
-<p style={{ color: '#94a3b8', maxWidth: '500px', margin: '0 auto 24px auto' }}>
-Duffel system payload has verified passenger {passengerDetails.firstName} {passengerDetails.lastName}. Your ticket queue status is live in airline central servers.
-
-<div style={{ background: '#1e293b', border: '1px solid #334155', padding: '16px', borderRadius: '12px', display: 'inline-block', textAlign: 'left', minWidth: '280px', marginBottom: '24px' }}>
-<div style={{ fontSize: '0.8rem', color: '#64748b' }}>DUFFEL ORDER ID
-<div style={{ fontValues: 'monospace', fontWeight: 'bold', color: '#22d3ee', marginTop: '2px' }}>ord_live_7x89p2m3wRz5q
-
-
-<button type="button" className="search-btn" style={{ width: 'auto', padding: '12px 30px' }} onClick={() => { setBookingSuccess(false); setSelectedOffer(null); setFlights([]); }}>
-Book Another Flight
-
-
-
-)}
-
-);
+.book-btn {
+  margin-top: 10px;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
 }
