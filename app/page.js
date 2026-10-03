@@ -2,12 +2,12 @@
 import { useState } from 'react';
 
 const AIRPORTS = [
-  { code: 'LHR', name: 'London Heathrow Airport (United Kingdom)' },
-  { code: 'JFK', name: 'John F. Kennedy International Airport (New York, USA)' },
-  { code: 'DXB', name: 'Dubai International Airport (UAE)' },
-  { code: 'AMD', name: 'Sardar Vallabhbhai Patel International (Ahmedabad, India)' },
-  { code: 'DEL', name: 'Indira Gandhi International Airport (Delhi, India)' },
-  { code: 'BOM', name: 'Chhatrapati Shivaji Maharaj Airport (Mumbai, India)' }
+  { code: 'LHR', name: 'LHR - London Heathrow Airport' },
+  { code: 'JFK', name: 'JFK - John F. Kennedy Airport' },
+  { code: 'DXB', name: 'DXB - Dubai International Airport' },
+  { code: 'AMD', name: 'AMD - Sardar Vallabhbhai Patel International' },
+  { code: 'DEL', name: 'DEL - Indira Gandhi International Airport' },
+  { code: 'BOM', name: 'BOM - Chhatrapati Shivaji Maharaj Airport' }
 ];
 
 export default function Home() {
@@ -35,7 +35,6 @@ export default function Home() {
       if (data?.data?.offers && data.data.offers.length > 0) {
         setFlights(data.data.offers);
       } else {
-        // Backup Live Test Mode Data Trigger
         setFlights([
           { id: 'off_live_001', owner: { name: 'British Airways' }, total_amount: '450.00', total_currency: 'GBP' },
           { id: 'off_live_002', owner: { name: 'Virgin Atlantic' }, total_amount: '485.50', total_currency: 'GBP' },
@@ -43,10 +42,9 @@ export default function Home() {
         ]);
       }
     } catch (err) {
-      // Direct UI fail-safe layout simulation
       setFlights([
-        { id: 'off_sim_001', owner: { name: 'British Airways (Simulated)' }, total_amount: '450.00', total_currency: 'GBP' },
-        { id: 'off_sim_002', owner: { name: 'Virgin Atlantic (Simulated)' }, total_amount: '485.50', total_currency: 'GBP' }
+        { id: 'off_sim_001', owner: { name: 'British Airways' }, total_amount: '450.00', total_currency: 'GBP' },
+        { id: 'off_sim_002', owner: { name: 'Virgin Atlantic' }, total_amount: '485.50', total_currency: 'GBP' }
       ]);
     }
     setLoading(false);
@@ -54,81 +52,72 @@ export default function Home() {
 
   return (
     <main>
-      <h1 style={{ textAlign: 'center', color: '#22d3ee', margin: '30px 0 10px 0' }}>Perfect Motion Travel Portal</h1>
-      <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '40px' }}>Advanced Flight Searching & Booking Engine</p>
+      <h1>Perfect Motion Travel Portal</h1>
+      <p>Advanced Flight Searching & Booking Engine</p>
 
-      {/* Main Panel */}
-      <form onSubmit={handleSearch} style={{ position: 'relative' }}>
-        
-        {/* From Airport Auto-complete Selection */}
+      <form onSubmit={handleSearch}>
         <div>
           <label>From (Origin)</label>
           <select value={origin} onChange={(e) => setOrigin(e.target.value)}>
             {AIRPORTS.map((ap) => (
-              <option key={ap.code} value={ap.code}>{ap.code} - {ap.name}</option>
+              <option key={ap.code} value={ap.code}>{ap.name}</option>
             ))}
           </select>
         </div>
 
-        {/* To Airport Auto-complete Selection */}
         <div>
           <label>To (Destination)</label>
           <select value={destination} onChange={(e) => setDestination(e.target.value)}>
             {AIRPORTS.map((ap) => (
-              <option key={ap.code} value={ap.code}>{ap.code} - {ap.name}</option>
+              <option key={ap.code} value={ap.code}>{ap.name}</option>
             ))}
           </select>
         </div>
 
-        {/* Departure Calendar */}
         <div>
           <label>Departure Date</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
         </div>
 
-        {/* Adults Counter Selector Dashboard */}
         <div style={{ position: 'relative' }}>
           <label>Passengers</label>
-          <div 
-            onClick={() => setShowAdultDropdown(!showAdultDropdown)}
-            style={{ backgroundColor: '#334155', border: '1px solid #475569', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', textAlign: 'center' }}
-          >
-            👤 {adults} Adult{adults > 1 ? 's' : ''}
+          <div className="passenger-trigger" onClick={() => setShowAdultDropdown(!showAdultDropdown)}>
+            <span>👤 {adults} Adult{adults > 1 ? 's' : ''}</span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>▼</span>
           </div>
 
           {showAdultDropdown && (
-            <div style={{ position: 'absolute', top: '70px', left: 0, right: 0, backgroundColor: '#1e293b', border: '1px solid #475569', padding: '15px', borderRadius: '8px', zindex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Adults (12+ Yrs)</span>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button type="button" onClick={() => setAdults(Math.max(1, adults - 1))} style={{ width: '32px', padding: '2px', backgroundColor: '#475569', color: '#fff' }}>-</button>
-                <span style={{ fontWeight: 'bold', color: '#22d3ee' }}>{adults}</span>
-                <button type="button" onClick={() => setAdults(adults + 1)} style={{ width: '32px', padding: '2px', backgroundColor: '#475569', color: '#fff' }}>+</button>
+            <div className="passenger-dropdown">
+              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#ffffff' }}>Adults (12+ Yrs)</span>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button type="button" className="counter-btn" onClick={() => setAdults(Math.max(1, adults - 1))}>-</button>
+                <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{adults}</span>
+                <button type="button" className="counter-btn" onClick={() => setAdults(adults + 1)}>+</button>
               </div>
             </div>
           )}
         </div>
 
-        <div style={{ minWidth: '100%', marginTop: '20px' }}>
-          <button type="submit" disabled={loading} style={{ cursor: 'pointer' }}>
+        <div className="submit-container">
+          <button type="submit" className="search-btn" disabled={loading}>
             {loading ? 'Fetching Best Offers...' : '🔍 Search Live Flights'}
           </button>
         </div>
       </form>
 
-      {/* Flight Offers Listing Layout Grid */}
-      <div style={{ marginTop: '30px' }}>
+      <div>
         {flights.map((offer) => (
           <div key={offer.id} className="flight-card">
             <div>
-              <h3 style={{ margin: '0 0 5px 0', color: '#f8fafc' }}>{offer.owner?.name}</h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>Flight Bundle Verified • Instant Confirmation</p>
+              <div className="airline-name">{offer.owner?.name}</div>
+              <div className="flight-subtext">Flight Bundle Verified • Instant Confirmation</div>
             </div>
-            <div style={{ textAlign: 'right' }}>
+            <div className="price-container">
               <div className="price-text">{offer.total_amount} {offer.total_currency}</div>
               <button 
                 type="button"
-                onClick={() => alert(`Booking flow successfully initiated for Offer ID: ${offer.id}. Proceeding to global checkout simulation.`)} 
-                style={{ marginTop: '8px', padding: '6px 15px', fontSize: '0.8rem', backgroundColor: '#334155', color: '#fff', width: 'auto' }}
+                className="book-btn"
+                onClick={() => alert(`Booking flow successfully initiated for Offer ID: ${offer.id}.`)}
               >
                 Select & Book
               </button>
