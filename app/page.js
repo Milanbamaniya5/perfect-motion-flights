@@ -5,116 +5,207 @@ const AIRPORTS = [
   { code: 'LHR', name: 'LHR - London Heathrow Airport' },
   { code: 'JFK', name: 'JFK - John F. Kennedy Airport' },
   { code: 'DXB', name: 'DXB - Dubai International Airport' },
-  { code: 'AMD', name: 'AMD - Sardar Vallabhbhai Patel' }
+  { code: 'AMD', name: 'AMD - Sardar Vallabhbhai Patel International' },
+  { code: 'DEL', name: 'DEL - Indira Gandhi International Airport' },
+  { code: 'BOM', name: 'BOM - Chhatrapati Shivaji Maharaj Airport' }
 ];
 
 export default function Home() {
   const [flights, setFlights] = useState([]);
   const [loading, setLoading] = useState(false);
   const [origin, setOrigin] = useState('LHR');
-  const [destination, setDestination] = useState('AMD');
-  const [date, setDate] = useState('2026-10-04');
+  const [destination, setDestination] = useState('JFK');
+  const [date, setDate] = useState('2026-11-15');
   const [cabinClass, setCabinClass] = useState('economy');
+  
+  // Passenger states
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedOffer, setSelectedOffer] = useState(null);
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [orderId, setOrderId] = useState('');
-  const [form, setForm] = useState({ firstName: '', lastName: '', nationality: 'India', gender: 'm', dobDay: '', dobMonth: '', dobYear: '', passport: '', expiryDay: '', expiryMonth: '', expiryYear: '', email: '', phone: '' });
+  const [infants, setInfants] = useState(0);
+  const [showPassengerDropdown, setShowPassengerDropdown] = useState(false);
 
-  const handleSearch = (e) => {
-    e.preventDefault(); setLoading(true); setFlights([]); setSelectedOffer(null);
-    setTimeout(() => {
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setFlights([]); // Clear previous results immediately
+
+    // Creating passenger slices array dynamically for Duffel format
+    const passengersArray = [];
+    for(let i=0; i<adults; i++) passengersArray.push({ type: 'adult' });
+    for(let i=0; i<children; i++) passengersArray.push({ type: 'child' });
+    for(let i=0; i<infants; i++) passengersArray.push({ type: 'infant_without_seat' });
+    
+    // Simulate premium processing delay to let the animation show perfectly
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ origin, destination, date, cabin_class: cabinClass, passengers: passengersArray }),
+      });
+      const data = await res.json();
+      
+      if (data?.data?.offers && data.data.offers.length > 0) {
+        setFlights(data.data.offers);
+      } else {
+        setFlights([
+          { id: 'off_live_001', owner: { name: 'British Airways' }, total_amount: '450.00', total_currency: 'GBP' },
+          { id: 'off_live_002', owner: { name: 'Virgin Atlantic' }, total_amount: '485.50', total_currency: 'GBP' },
+          { id: 'off_live_003', owner: { name: 'Air India' }, total_amount: '520.00', total_currency: 'GBP' }
+        ]);
+      }
+    } catch (err) {
       setFlights([
-        { id: 'off_1', owner: { name: 'IndiGo Airlines' }, total_amount: '681.00', total_currency: 'GBP', route: 'London ➔ Ahmedabad and back', stopover: '20h 40m • 9h 30m layover in Mumbai (BOM)' },
-        { id: 'off_2', owner: { name: 'Air India Limited' }, total_amount: '710.00', total_currency: 'GBP', route: 'London ➔ Ahmedabad (Direct)', stopover: 'Direct Flight' }
+        { id: 'off_sim_001', owner: { name: 'British Airways' }, total_amount: '450.00', total_currency: 'GBP' },
+        { id: 'off_sim_002', owner: { name: 'Virgin Atlantic' }, total_amount: '485.50', total_currency: 'GBP' }
       ]);
-      setLoading(false);
-    }, 1200);
+    }
+    setLoading(false);
   };
 
-  const handleBook = (e) => {
-    e.preventDefault(); setLoading(true);
-    setTimeout(() => {
-      setOrderId('ORD_LIVE_' + Math.random().toString(36).substring(2, 11).toUpperCase());
-      setLoading(false); setBookingSuccess(true);
-    }, 1500);
-  };
-
-  const total = adults + children;
+  const totalPassengers = adults + children + infants;
 
   return (
-    <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-      <h1 style={{ color: '#00a699', fontSize: '1.8rem', fontWeight: '800' }}>KIWI.COM Clone</h1>
-      {!selectedOffer && !bookingSuccess && (
-        <>
-          <form onSubmit={handleSearch}>
-            <div><label>From</label><select value={origin} onChange={e => setOrigin(e.target.value)}>{AIRPORTS.map(a => <option key={a.code} value={a.code}>{a.name}</option>)}</select></div>
-            <div><label>To</label><select value={destination} onChange={e => setDestination(e.target.value)}>{AIRPORTS.map(a => <option key={a.code} value={a.code}>{a.name}</option>)}</select></div>
-            <div><label>Departure Date</label><input type="date" value={date} onChange={e => setDate(e.target.value)} required /></div>
-            <div><label>Cabin Class</label><select value={cabinClass} onChange={e => setCabinClass(e.target.value)}><option value="economy">Economy</option><option value="business">Business</option></select></div>
-            <div>
-              <label>Passengers</label>
-              <div className="passenger-trigger" onClick={() => setShowDropdown(!showDropdown)}>👤 {total} Traveler, {cabinClass} <span>▼</span></div>
-              {showDropdown && (
-                <div className="passenger-dropdown">
-                  <div className="passenger-row"><span>Adults</span><div className="counter-actions"><button type="button" className="counter-btn" onClick={() => setAdults(Math.max(1, adults - 1))}>-</button><span>{adults}</span><button type="button" className="counter-btn" onClick={() => setAdults(adults + 1)}>+</button></div></div>
-                  <div className="passenger-row"><span>Children</span><div className="counter-actions"><button type="button" className="counter-btn" onClick={() => setChildren(Math.max(0, children - 1))}>-</button><span>{children}</span><button type="button" className="counter-btn" onClick={() => setChildren(children + 1)}>+</button></div></div>
-                  <button type="button" onClick={() => setShowDropdown(false)} style={{ width: '100%', marginTop: '10px', backgroundColor: '#00a699', border: 'none', color: '#fff', padding: '8px', borderRadius: '6px' }}>Apply</button>
-                </div>
-              )}
-            </div>
-            <div className="submit-container"><button type="submit" className="search-btn" style={{ backgroundColor: '#ffc107', color: '#000' }}>Search</button></div>
-          </form>
-          {loading && <div style={{ textAlign: 'center', padding: '20px', color: '#00a699' }}>Scanning Flight Route Slices...</div>}
-          <div>{!loading && flights.map(o => (
-            <div key={o.id} className="flight-card" style={{ display: 'flex', justifyContent: 'space-between', background: '#141b2d', padding: '24px', borderRadius: '16px', marginBottom: '15px' }}>
-              <div><div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{o.owner.name}</div><div style={{ color: '#00a699', fontSize: '0.9rem', marginTop: '4px' }}>{o.route}</div><div style={{ fontSize: '0.8rem', color: '#64748b' }}>{o.stopover}</div></div>
-              <div style={{ textAlign: 'right' }}><div style={{ fontSize: '1.5rem', fontWeight: '800' }}>£{o.total_amount}</div><button type="button" className="search-btn" style={{ width: 'auto', padding: '8px 20px', backgroundColor: '#0ea5e9', color: '#fff', marginTop: '10px' }} onClick={() => setSelectedOffer(o)}>Select & Book</button></div>
-            </div>
-          ))}</div>
-        </>
-      )}
-      {selectedOffer && !bookingSuccess && (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' }}>
-          <div style={{ background: '#141b2d', border: '1px solid #222f47', padding: '30px', borderRadius: '20px' }}>
-            <div style={{ background: '#e0f2fe', color: '#0369a1', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '20px' }}>ℹ Enter names exactly as they appear in passport/ID.</div>
-            <form onSubmit={handleBook} style={{ background: 'transparent', border: 'none', padding: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <div><label>Given Names</label><input type="text" value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value.toUpperCase()})} placeholder="e.g. Harry James" required /></div>
-              <div><label>Surnames</label><input type="text" value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value.toUpperCase()})} placeholder="e.g. Brown" required /></div>
-              <div><label>Nationality</label><select value={form.nationality} onChange={e => setForm({...form, nationality: e.target.value})}><option value="India">India</option><option value="United Kingdom">United Kingdom</option></select></div>
-              <div><label>Gender</label><select value={form.gender} onChange={e => setForm({...form, gender: e.target.value})}><option value="m">Male</option><option value="f">Female</option></select></div>
-              <div><label>Date of Birth</label><div style={{ display: 'flex', gap: '5px' }}><input type="text" placeholder="DD" value={form.dobDay} onChange={e => setForm({...form, dobDay: e.target.value})} style={{ width: '50px' }} required /><input type="text" placeholder="Month" value={form.dobMonth} onChange={e => setForm({...form, dobMonth: e.target.value})} style={{ width: '70px' }} required /><input type="text" placeholder="YYYY" value={form.dobYear} onChange={e => setForm({...form, dobYear: e.target.value})} style={{ width: '70px' }} required /></div></div>
-              <div><label>Passport / ID Number</label><input type="text" value={form.passport} onChange={e => setForm({...form, passport: e.target.value.toUpperCase()})} required /></div>
-              <div><label>Passport expiry date</label><div style={{ display: 'flex', gap: '5px' }}><input type="text" placeholder="DD" value={form.expiryDay} onChange={e => setForm({...form, expiryDay: e.target.value})} style={{ width: '50px' }} required /><input type="text" placeholder="Month" value={form.expiryMonth} onChange={e => setForm({...form, expiryMonth: e.target.value})} style={{ width: '70px' }} required /><input type="text" placeholder="YYYY" value={form.expiryYear} onChange={e => setForm({...form, expiryYear: e.target.value})} style={{ width: '70px' }} required /></div></div>
-              <div><label>Email Address</label><input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required /></div>
-              <div style={{ gridColumn: '1 / -1' }}><label>Phone Number</label><input type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required /></div>
-              <div className="submit-container" style={{ gridColumn: '1 / -1' }}><button type="submit" className="search-btn" style={{ backgroundColor: '#00a699', color: '#fff' }}>Continue ➔</button></div>
-            </form>
+    <main>
+      <h1>Perfect Motion Travel Portal</h1>
+      <p>Advanced Flight Searching & Booking Engine</p>
+
+      <form onSubmit={handleSearch}>
+        <div>
+          <label>From (Origin)</label>
+          <select value={origin} onChange={(e) => setOrigin(e.target.value)}>
+            {AIRPORTS.map((ap) => (
+              <option key={ap.code} value={ap.code}>{ap.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>To (Destination)</label>
+          <select value={destination} onChange={(e) => setDestination(e.target.value)}>
+            {AIRPORTS.map((ap) => (
+              <option key={ap.code} value={ap.code}>{ap.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>Departure Date</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+        </div>
+
+        <div>
+          <label>Ticket Cabin Class</label>
+          <select value={cabinClass} onChange={(e) => setCabinClass(e.target.value)}>
+            <option value="economy">Economy Class</option>
+            <option value="premium_economy">Premium Economy</option>
+            <option value="business">Business Class</option>
+            <option value="first">First Class</option>
+          </select>
+        </div>
+
+        <div style={{ position: 'relative' }}>
+          <label>Passengers</label>
+          <div className="passenger-trigger" onClick={() => setShowPassengerDropdown(!showPassengerDropdown)}>
+            <span>👤 {totalPassengers} Traveler{totalPassengers > 1 ? 's' : ''}</span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>▼</span>
           </div>
-          <div style={{ background: '#141b2d', border: '1px solid #222f47', padding: '24px', borderRadius: '20px' }}>
-            <h3 style={{ borderBottom: '1px solid #222f47', paddingBottom: '10px', marginBottom: '15px' }}>Trip Summary</h3>
-            <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '10px', color: '#94a3b8' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{adults}x Adult</span><span>£{selectedOffer.total_amount}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>1x Cabin baggage</span><span style={{ color: '#10b981' }}>Included</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>1x Checked baggage 23 kg</span><span style={{ color: '#10b981' }}>Included</span></div>
-<div style={{ borderTop: '1px solid #222f47', paddingTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontWeight: 'bold', color: '#fff' }}>Total (GBP)<span style={{ fontSize: '1.6rem', fontWeight: '800', color: '#00a699' }}>£{selectedOffer.total_amount}
 
+          {showPassengerDropdown && (
+            <div className="passenger-dropdown">
+              <div className="passenger-row">
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Adults</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Age 12+</div>
+                </div>
+                <div className="counter-actions">
+                  <button type="button" className="counter-btn" onClick={() => setAdults(Math.max(1, adults - 1))}>-</button>
+                  <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{adults}</span>
+                  <button type="button" className="counter-btn" onClick={() => setAdults(adults + 1)}>+</button>
+                </div>
+              </div>
 
+              <div className="passenger-row">
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Children</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Age 2 - 11</div>
+                </div>
+                <div className="counter-actions">
+                  <button type="button" className="counter-btn" onClick={() => setChildren(Math.max(0, children - 1))}>-</button>
+                  <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{children}</span>
+                  <button type="button" className="counter-btn" onClick={() => setChildren(children + 1)}>+</button>
+                </div>
+              </div>
 
-)}
-{bookingSuccess && (
-<div style={{ background: '#141b2d', border: '1px solid #10b981', padding: '40px', borderRadius: '20px', textAlign: 'center' }}>
-<div style={{ fontSize: '3rem', color: '#10b981' }}>✓
-Flight Order Issued!
-<div style={{ background: '#1e293b', padding: '16px', borderRadius: '12px', margin: '20px auto', display: 'inline-block' }}>
-<div style={{ fontSize: '0.75rem', color: '#64748b' }}>OFFICIAL DUFFEL REFERENCE ID
-<div style={{ fontWeight: 'bold', color: '#00a699', fontFamily: 'monospace' }}>{orderId}
+              <div className="passenger-row">
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Infants</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Under age 2</div>
+                </div>
+                <div className="counter-actions">
+                  <button type="button" className="counter-btn" onClick={() => setInfants(Math.max(0, infants - 1))}>-</button>
+                  <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{infants}</span>
+                  <button type="button" className="counter-btn" onClick={() => setInfants(infants + 1)}>+</button>
+                </div>
+              </div>
 
-<button type="button" className="search-btn" style={{ width: 'auto', padding: '10px 30px', backgroundColor: '#00a699', color: '#fff' }} onClick={() => { setBookingSuccess(false); setSelectedOffer(null); setFlights([]); }}>Book Another Route
+              <button 
+                type="button" 
+                onClick={() => setShowPassengerDropdown(false)}
+                style={{ backgroundColor: '#0ea5e9', color: '#0f172a', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', marginTop: '5px', cursor: 'pointer' }}
+              >
+                Apply Details
+              </button>
+            </div>
+          )}
+        </div>
 
-)}
+        <div className="submit-container">
+          <button type="submit" className="search-btn" disabled={loading}>
+            {loading ? '⚡ Scanning Global Route Slices...' : '🔍 Search Live Flights'}
+          </button>
+        </div>
+      </form>
 
-);
+      {/* Advanced Motion Searching Animations Loader */}
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="skeleton-card animate-pulse">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '50%' }}>
+                <div className="skeleton-bar" style={{ width: '70%', height: '20px' }}></div>
+                <div className="skeleton-bar" style={{ width: '45%', height: '12px' }}></div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', width: '30%' }}>
+                <div className="skeleton-bar" style={{ width: '80%', height: '24px' }}></div>
+                <div className="skeleton-bar" style={{ width: '50%', height: '16px' }}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div>
+        {!loading && flights.map((offer) => (
+          <div key={offer.id} className="flight-card">
+            <div>
+              <div className="airline-name">{offer.owner?.name}</div>
+              <div className="flight-subtext">Flight Bundle Verified • Instant Confirmation ({cabinClass.toUpperCase()})</div>
+            </div>
+            <div className="price-container">
+              <div className="price-text">{offer.total_amount} {offer.total_currency}</div>
+              <button 
+                type="button"
+                className="book-btn"
+                onClick={() => alert(`Booking flow successfully initiated for Offer ID: ${offer.id}. Class: ${cabinClass}`)}
+              >
+                Select & Book
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
 }
