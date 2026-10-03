@@ -18,7 +18,7 @@ export default function Home() {
   const [date, setDate] = useState('2026-11-15');
   const [cabinClass, setCabinClass] = useState('economy');
   
-  // Passenger states
+  // Passenger counters
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [infants, setInfants] = useState(0);
@@ -49,8 +49,8 @@ export default function Home() {
     for(let i=0; i<children; i++) passengersArray.push({ type: 'child' });
     for(let i=0; i<infants; i++) passengersArray.push({ type: 'infant_without_seat' });
     
-    // Smooth processing simulation delay for Perfect Motion look
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Smooth skeleton processing animation delay
+    await new Promise((resolve) => setTimeout(resolve, 2200));
 
     try {
       const res = await fetch('/api/search', {
@@ -220,8 +220,8 @@ export default function Home() {
                   <div className="flight-subtext">Flight Bundle Verified • Instant Confirmation ({cabinClass.toUpperCase()})</div>
                 </div>
                 <div className="price-container">
-{offer.total_amount} {offer.total_currency}
-<button
+                  <div className="price-text">{offer.total_amount} {offer.total_currency}</div>
+                  <button 
 type="button"
 className="search-btn"
 style={{ marginTop: '10px', padding: '8px 20px', fontSize: '0.9rem', width: 'auto' }}
