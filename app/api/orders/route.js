@@ -14,7 +14,6 @@ export async function POST(request) {
       );
     }
 
-    // Format passengers data as required by Duffel API
     const formattedPassengers = passengers.map((p, index) => ({
       id: `pas_${index + 1}`,
       given_name: p.given_name,
@@ -34,7 +33,6 @@ export async function POST(request) {
       ]
     }));
 
-    // Call Duffel Orders API (using 'test' type of payment for test mode)
     const orderResponse = await fetch('https://api.duffel.com/air/orders', {
       method: 'POST',
       headers: {
@@ -49,7 +47,7 @@ export async function POST(request) {
           payments: [
             {
               type: 'balance',
-              amount: '0.00', // For test mode orders
+              amount: '0.00',
               currency: 'GBP'
             }
           ]
