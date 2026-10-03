@@ -1,11 +1,94 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
-
 body {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
   background-color: #0f172a;
+  color: #ffffff;
   font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+main {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #22d3ee;
+  font-size: 2.5rem;
+}
+
+p {
+  text-align: center;
+  color: #94a3b8;
+}
+
+form {
+  background-color: #1e293b;
+  padding: 24px;
+  border-radius: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 32px;
+  border: 1px solid #334155;
+}
+
+form div {
+  flex: 1;
+  min-width: 150px;
+}
+
+label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #334155;
+  border: 1px solid #475569;
+  padding: 12px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+button {
+  background-color: #22d3ee;
+  color: #0f172a;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+button:hover {
+  background-color: #67e8f9;
+}
+
+.flight-card {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  padding: 20px;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.price-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #22d3ee;
 }
