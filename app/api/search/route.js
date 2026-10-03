@@ -40,8 +40,13 @@ export async function GET(request) {
     const offerRequestData = await offerRequestResponse.json();
 
     if (!offerRequestResponse.ok) {
+      // Yahan error ko properly string mein convert kiya hai taaki [object Object] na aaye
+      const errorMessage = offerRequestData.errors 
+        ? JSON.stringify(offerRequestData.errors) 
+        : 'Failed to fetch flight offers from Duffel';
+
       return NextResponse.json(
-        { error: offerRequestData.errors || 'Failed to fetch flight offers from Duffel' },
+        { error: errorMessage },
         { status: offerRequestResponse.status }
       );
     }
@@ -54,7 +59,7 @@ export async function GET(request) {
   } catch (error) {
     console.error('Duffel API Error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: error.message || 'Internal Server Error' },
       { status: 500 }
     );
   }
