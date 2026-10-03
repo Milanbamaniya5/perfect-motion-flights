@@ -6,8 +6,8 @@ export async function POST(request) {
     const { offer_id, passengers } = body;
     const DUFFEL_API_KEY = process.env.DUFFEL_API_KEY;
 
-    if (!offer_id || !passengers) {
-      return NextResponse.json({ error: 'Missing data' }, { status: 400 });
+    if (!offer_id || !passengers || !Array.isArray(passengers) || passengers.length === 0) {
+      return NextResponse.json({ error: 'Missing or invalid offer_id or passengers data' }, { status: 400 });
     }
 
     const formattedPassengers = passengers.map((p, index) => ({
@@ -55,11 +55,13 @@ export async function POST(request) {
     const orderData = await orderResponse.json();
 
     if (!orderResponse.ok) {
-      return NextResponse.json({ error: JSON.stringify(orderData.errors) }, { status: orderResponse.status });
+      const errorMessage = orderData.errors ? JSON.stringify(orderData.errors) : 'Failed to create order on Duffel';
+      return NextResponse.json({ error: errorMessage }, { status: orderResponse.status });
     }
 
     return NextResponse.json({ success: true, data: orderData.data });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('API Error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
