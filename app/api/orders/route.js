@@ -28,7 +28,7 @@ export async function POST(request) {
           type: 'passport',
           number: p.passport_number,
           expiry_date: p.passport_expiry_date,
-          issuing_country_code: p.nationality,
+          issuing_country_code: p.nationality || 'GB',
         }
       ]
     }));
@@ -37,7 +37,7 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${DUFFEL_API_KEY}`,
-        'Duffel-Version': 'v1',
+        'Duffel-Version': 'v2', // Updated to v2
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -58,8 +58,12 @@ export async function POST(request) {
     const orderData = await orderResponse.json();
 
     if (!orderResponse.ok) {
+      const errorMessage = orderData.errors 
+        ? JSON.stringify(orderData.errors) 
+        : 'Failed to create order on Duffel';
+
       return NextResponse.json(
-        { error: orderData.errors || 'Failed to create order on Duffel' },
+        { error: errorMessage },
         { status: orderResponse.status }
       );
     }
@@ -72,7 +76,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Duffel Order Error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: error.message || 'Internal Server Error' },
       { status: 500 }
     );
   }
