@@ -27,7 +27,7 @@ export default function Home() {
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setFlights([]);
+    setFlights([]); // Clear previous results immediately
 
     // Creating passenger slices array dynamically for Duffel format
     const passengersArray = [];
@@ -35,6 +35,9 @@ export default function Home() {
     for(let i=0; i<children; i++) passengersArray.push({ type: 'child' });
     for(let i=0; i<infants; i++) passengersArray.push({ type: 'infant_without_seat' });
     
+    // Simulate premium processing delay to let the animation show perfectly
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
@@ -111,7 +114,6 @@ export default function Home() {
 
           {showPassengerDropdown && (
             <div className="passenger-dropdown">
-              {/* Adults Selector Row */}
               <div className="passenger-row">
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Adults</div>
@@ -124,7 +126,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Children Selector Row */}
               <div className="passenger-row">
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Children</div>
@@ -137,7 +138,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Infants Selector Row */}
               <div className="passenger-row">
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Infants</div>
@@ -153,9 +153,9 @@ export default function Home() {
               <button 
                 type="button" 
                 onClick={() => setShowPassengerDropdown(false)}
-                style={{ backgroundColor: '#0ea5e9', color: '#0f172a', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', marginTop: '5px' }}
+                style={{ backgroundColor: '#0ea5e9', color: '#0f172a', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', marginTop: '5px', cursor: 'pointer' }}
               >
-                Done
+                Apply Details
               </button>
             </div>
           )}
@@ -163,13 +163,31 @@ export default function Home() {
 
         <div className="submit-container">
           <button type="submit" className="search-btn" disabled={loading}>
-            {loading ? 'Searching Best Flight Deals...' : '🔍 Search Live Flights'}
+            {loading ? '⚡ Scanning Global Route Slices...' : '🔍 Search Live Flights'}
           </button>
         </div>
       </form>
 
+      {/* Advanced Motion Searching Animations Loader */}
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="skeleton-card animate-pulse">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '50%' }}>
+                <div className="skeleton-bar" style={{ width: '70%', height: '20px' }}></div>
+                <div className="skeleton-bar" style={{ width: '45%', height: '12px' }}></div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', width: '30%' }}>
+                <div className="skeleton-bar" style={{ width: '80%', height: '24px' }}></div>
+                <div className="skeleton-bar" style={{ width: '50%', height: '16px' }}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div>
-        {flights.map((offer) => (
+        {!loading && flights.map((offer) => (
           <div key={offer.id} className="flight-card">
             <div>
               <div className="airline-name">{offer.owner?.name}</div>
