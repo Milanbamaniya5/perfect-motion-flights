@@ -16,19 +16,30 @@ export default function Home() {
   const [origin, setOrigin] = useState('LHR');
   const [destination, setDestination] = useState('JFK');
   const [date, setDate] = useState('2026-11-15');
+  const [cabinClass, setCabinClass] = useState('economy');
+  
+  // Passenger states
   const [adults, setAdults] = useState(1);
-  const [showAdultDropdown, setShowAdultDropdown] = useState(false);
+  const [children, setChildren] = useState(0);
+  const [infants, setInfants] = useState(0);
+  const [showPassengerDropdown, setShowPassengerDropdown] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
     setFlights([]);
+
+    // Creating passenger slices array dynamically for Duffel format
+    const passengersArray = [];
+    for(let i=0; i<adults; i++) passengersArray.push({ type: 'adult' });
+    for(let i=0; i<children; i++) passengersArray.push({ type: 'child' });
+    for(let i=0; i<infants; i++) passengersArray.push({ type: 'infant_without_seat' });
     
     try {
       const res = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ origin, destination, date, passengers: [{ type: 'adult' }] }),
+        body: JSON.stringify({ origin, destination, date, cabin_class: cabinClass, passengers: passengersArray }),
       });
       const data = await res.json();
       
@@ -49,6 +60,8 @@ export default function Home() {
     }
     setLoading(false);
   };
+
+  const totalPassengers = adults + children + infants;
 
   return (
     <main>
@@ -79,28 +92,78 @@ export default function Home() {
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
         </div>
 
+        <div>
+          <label>Ticket Cabin Class</label>
+          <select value={cabinClass} onChange={(e) => setCabinClass(e.target.value)}>
+            <option value="economy">Economy Class</option>
+            <option value="premium_economy">Premium Economy</option>
+            <option value="business">Business Class</option>
+            <option value="first">First Class</option>
+          </select>
+        </div>
+
         <div style={{ position: 'relative' }}>
           <label>Passengers</label>
-          <div className="passenger-trigger" onClick={() => setShowAdultDropdown(!showAdultDropdown)}>
-            <span>👤 {adults} Adult{adults > 1 ? 's' : ''}</span>
+          <div className="passenger-trigger" onClick={() => setShowPassengerDropdown(!showPassengerDropdown)}>
+            <span>👤 {totalPassengers} Traveler{totalPassengers > 1 ? 's' : ''}</span>
             <span style={{ fontSize: '0.8rem', color: '#64748b' }}>▼</span>
           </div>
 
-          {showAdultDropdown && (
+          {showPassengerDropdown && (
             <div className="passenger-dropdown">
-              <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#ffffff' }}>Adults (12+ Yrs)</span>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <button type="button" className="counter-btn" onClick={() => setAdults(Math.max(1, adults - 1))}>-</button>
-                <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{adults}</span>
-                <button type="button" className="counter-btn" onClick={() => setAdults(adults + 1)}>+</button>
+              {/* Adults Selector Row */}
+              <div className="passenger-row">
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Adults</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Age 12+</div>
+                </div>
+                <div className="counter-actions">
+                  <button type="button" className="counter-btn" onClick={() => setAdults(Math.max(1, adults - 1))}>-</button>
+                  <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{adults}</span>
+                  <button type="button" className="counter-btn" onClick={() => setAdults(adults + 1)}>+</button>
+                </div>
               </div>
+
+              {/* Children Selector Row */}
+              <div className="passenger-row">
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Children</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Age 2 - 11</div>
+                </div>
+                <div className="counter-actions">
+                  <button type="button" className="counter-btn" onClick={() => setChildren(Math.max(0, children - 1))}>-</button>
+                  <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{children}</span>
+                  <button type="button" className="counter-btn" onClick={() => setChildren(children + 1)}>+</button>
+                </div>
+              </div>
+
+              {/* Infants Selector Row */}
+              <div className="passenger-row">
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Infants</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Under age 2</div>
+                </div>
+                <div className="counter-actions">
+                  <button type="button" className="counter-btn" onClick={() => setInfants(Math.max(0, infants - 1))}>-</button>
+                  <span style={{ fontWeight: '700', color: '#22d3ee', minWidth: '16px', textAlign: 'center' }}>{infants}</span>
+                  <button type="button" className="counter-btn" onClick={() => setInfants(infants + 1)}>+</button>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                onClick={() => setShowPassengerDropdown(false)}
+                style={{ backgroundColor: '#0ea5e9', color: '#0f172a', border: 'none', padding: '8px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', marginTop: '5px' }}
+              >
+                Done
+              </button>
             </div>
           )}
         </div>
 
         <div className="submit-container">
           <button type="submit" className="search-btn" disabled={loading}>
-            {loading ? 'Fetching Best Offers...' : '🔍 Search Live Flights'}
+            {loading ? 'Searching Best Flight Deals...' : '🔍 Search Live Flights'}
           </button>
         </div>
       </form>
@@ -110,14 +173,14 @@ export default function Home() {
           <div key={offer.id} className="flight-card">
             <div>
               <div className="airline-name">{offer.owner?.name}</div>
-              <div className="flight-subtext">Flight Bundle Verified • Instant Confirmation</div>
+              <div className="flight-subtext">Flight Bundle Verified • Instant Confirmation ({cabinClass.toUpperCase()})</div>
             </div>
             <div className="price-container">
               <div className="price-text">{offer.total_amount} {offer.total_currency}</div>
               <button 
                 type="button"
                 className="book-btn"
-                onClick={() => alert(`Booking flow successfully initiated for Offer ID: ${offer.id}.`)}
+                onClick={() => alert(`Booking flow successfully initiated for Offer ID: ${offer.id}. Class: ${cabinClass}`)}
               >
                 Select & Book
               </button>
