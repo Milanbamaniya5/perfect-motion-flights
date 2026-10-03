@@ -13,7 +13,7 @@ export async function GET(request) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${DUFFEL_API_KEY}`,
-        'Duffel-Version': 'v1',
+        'Duffel-Version': 'v2',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
