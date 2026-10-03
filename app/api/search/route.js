@@ -14,7 +14,7 @@ export async function GET(request) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${DUFFEL_API_KEY}`,
-        'Duffel-Version': 'v1',
+        'Duffel-Version': 'v2', // Updated to v2
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -40,7 +40,6 @@ export async function GET(request) {
     const offerRequestData = await offerRequestResponse.json();
 
     if (!offerRequestResponse.ok) {
-      // Yahan error ko properly string mein convert kiya hai taaki [object Object] na aaye
       const errorMessage = offerRequestData.errors 
         ? JSON.stringify(offerRequestData.errors) 
         : 'Failed to fetch flight offers from Duffel';
