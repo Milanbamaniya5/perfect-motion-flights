@@ -1,20 +1,4 @@
-import { NextResponse } from 'next/server';
-
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const { offer_id, passengers } = body;
-
-    const DUFFEL_API_KEY = process.env.DUFFEL_API_KEY;
-
-    if (!offer_id || !passengers || passengers.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing offer_id or passenger details' },
-        { status: 400 }
-      );
-    }
-
-    const formattedPassengers = passengers.map((p, index) => ({
+const formattedPassengers = passengers.map((p, index) => ({
       id: `pas_${index + 1}`,
       given_name: p.given_name,
       family_name: p.family_name,
@@ -27,57 +11,9 @@ export async function POST(request) {
         {
           type: 'passport',
           number: p.passport_number,
-          expiry_date: p.passport_expiry_date,
+          unique_identifier: p.passport_number, // Yeh error solve karega
+          expires_on: p.passport_expiry_date,     // Yeh bhi error solve karega
           issuing_country_code: p.nationality || 'GB',
         }
       ]
     }));
-
-    const orderResponse = await fetch('https://api.duffel.com/air/orders', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${DUFFEL_API_KEY}`,
-        'Duffel-Version': 'v2', // Updated to v2
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        data: {
-          selected_offers: [offer_id],
-          passengers: formattedPassengers,
-          payments: [
-            {
-              type: 'balance',
-              amount: '0.00',
-              currency: 'GBP'
-            }
-          ]
-        }
-      }),
-    });
-
-    const orderData = await orderResponse.json();
-
-    if (!orderResponse.ok) {
-      const errorMessage = orderData.errors 
-        ? JSON.stringify(orderData.errors) 
-        : 'Failed to create order on Duffel';
-
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: orderResponse.status }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: orderData.data,
-    });
-
-  } catch (error) {
-    console.error('Duffel Order Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
-  }
-}
