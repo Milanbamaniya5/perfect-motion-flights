@@ -35,17 +35,7 @@ function CheckoutContent() {
 
   const [loading, setLoading] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
-  
-  // Field-wise error states for red border styling
-  const [errors, setErrors] = useState({
-    given_name: false,
-    family_name: false,
-    born_on: false,
-    email: false,
-    phone_number: false,
-    passport_number: false,
-    passport_expiry_date: false,
-  });
+  const [phoneError, setPhoneError] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -61,37 +51,28 @@ function CheckoutContent() {
       setFormData({ ...formData, [name]: value });
     }
 
-    // Clear error for that specific field when user starts typing/selecting
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: false }));
+    // Real-time typing ke waqt phone error check karo
+    if (name === 'phone_number') {
+      const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10 };
+      const isNumeric = /^\d*$/.test(value);
+      if (!isNumeric || value.trim().length !== activeCountry.phoneLength) {
+        setPhoneError(true);
+      } else {
+        setPhoneError(false);
+      }
     }
   };
 
   const handleBooking = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setLoading(setPhoneError(false));
 
-    let newErrors = {
-      given_name: !formData.given_name.trim(),
-      family_name: !formData.family_name.trim(),
-      born_on: !formData.born_on,
-      email: !formData.email.trim(),
-      passport_number: !formData.passport_number.trim(),
-      passport_expiry_date: !formData.passport_expiry_date,
-    };
-
-    // Phone validation
     const cleanPhone = formData.phone_number.trim();
     const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10 };
+
     const isNumeric = /^\d+$/.test(cleanPhone);
-    const phoneInvalid = !isNumeric || cleanPhone.length !== activeCountry.phoneLength;
-
-    newErrors.phone_number = phoneInvalid;
-
-    setErrors(newErrors);
-
-    // If any field has error, stop submission
-    if (Object.values(newErrors).some(Boolean)) {
+    if (!isNumeric || cleanPhone.length !== activeCountry.phoneLength) {
+      setPhoneError(true);
       setLoading(false);
       return;
     }
@@ -152,46 +133,22 @@ function CheckoutContent() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Given Name</label>
-              <input 
-                type="text" 
-                name="given_name" 
-                placeholder="John" 
-                value={formData.given_name} 
-                onChange={handleChange} 
-                className={`w-full p-3 border rounded-lg transition-all ${errors.given_name ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'}`} 
-              />
-              {errors.given_name && <span className="text-xs text-red-600 mt-1 block">Please enter given name</span>}
+              <input type="text" name="given_name" placeholder="John" value={formData.given_name} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Family Name</label>
-              <input 
-                type="text" 
-                name="family_name" 
-                placeholder="Doe" 
-                value={formData.family_name} 
-                onChange={handleChange} 
-                className={`w-full p-3 border rounded-lg transition-all ${errors.family_name ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'}`} 
-              />
-              {errors.family_name && <span className="text-xs text-red-600 mt-1 block">Please enter family name</span>}
+              <input type="text" name="family_name" placeholder="Doe" value={formData.family_name} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-              {/* Modern styled calendar date input */}
-              <input 
-                type="date" 
-                name="born_on" 
-                value={formData.born_on} 
-                onChange={handleChange} 
-                className={`w-full p-3 border rounded-lg bg-white shadow-sm transition-all cursor-pointer ${errors.born_on ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'}`} 
-              />
-              {errors.born_on && <span className="text-xs text-red-600 mt-1 block">Please select date of birth</span>}
+              <input type="date" name="born_on" value={formData.born_on} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border rounded-lg bg-white">
+              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="m">Male</option>
                 <option value="f">Female</option>
               </select>
@@ -200,7 +157,7 @@ function CheckoutContent() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
-            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border rounded-lg bg-white">
+            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
               {countries.map((c) => (
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
@@ -210,7 +167,7 @@ function CheckoutContent() {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
-              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border rounded-lg bg-white">
+              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 {countries.map((c) => (
                   <option key={c.code} value={c.dialCode}>{c.name} ({c.dialCode})</option>
                 ))}
@@ -219,8 +176,8 @@ function CheckoutContent() {
             <div className="col-span-2">
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                {errors.phone_number && (
-                  <span className="text-xs text-red-600 font-semibold animate-pulse">
+                {phoneError && (
+                  <span className="text-xs text-red-600 font-bold animate-pulse">
                     Please enter correct number
                   </span>
                 )}
@@ -231,54 +188,31 @@ function CheckoutContent() {
                 placeholder="Enter phone number" 
                 value={formData.phone_number} 
                 onChange={handleChange} 
-                className={`w-full p-3 border rounded-lg transition-all duration-200 ${
-                  errors.phone_number ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'
+                className={`w-full p-3 border rounded-lg outline-none transition-all duration-200 ${
+                  phoneError ? 'border-red-500 bg-red-50 ring-2 ring-red-200 text-red-900' : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
                 }`} 
+                required 
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input 
-              type="email" 
-              name="email" 
-              placeholder="john@example.com" 
-              value={formData.email} 
-              onChange={handleChange} 
-              className={`w-full p-3 border rounded-lg transition-all ${errors.email ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'}`} 
-            />
-            {errors.email && <span className="text-xs text-red-600 mt-1 block">Please enter valid email</span>}
+            <input type="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Passport Number</label>
-              <input 
-                type="text" 
-                name="passport_number" 
-                placeholder="A1234567" 
-                value={formData.passport_number} 
-                onChange={handleChange} 
-                className={`w-full p-3 border rounded-lg transition-all ${errors.passport_number ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'}`} 
-              />
-              {errors.passport_number && <span className="text-xs text-red-600 mt-1 block">Please enter passport number</span>}
+              <input type="text" name="passport_number" placeholder="A1234567" value={formData.passport_number} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Passport Expiry Date</label>
-              {/* Modern styled calendar date input for expiry */}
-              <input 
-                type="date" 
-                name="passport_expiry_date" 
-                value={formData.passport_expiry_date} 
-                onChange={handleChange} 
-                className={`w-full p-3 border rounded-lg bg-white shadow-sm transition-all cursor-pointer ${errors.passport_expiry_date ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'}`} 
-              />
-              {errors.passport_expiry_date && <span className="text-xs text-red-600 mt-1 block">Please select expiry date</span>}
+              <input type="date" name="passport_expiry_date" value={formData.passport_expiry_date} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" required />
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-4 rounded-xl mt-6 shadow transition-all">
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-4 rounded-xl mt-6 shadow transition">
             {loading ? 'Processing Booking...' : 'Complete Booking'}
           </button>
         </form>
