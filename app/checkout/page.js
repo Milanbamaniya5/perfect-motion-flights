@@ -35,7 +35,11 @@ function CheckoutContent() {
 
   const [loading, setLoading] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
+  
+  // Field-specific error states for red borders and error text
   const [phoneError, setPhoneError] = useState(false);
+  const [passportExpiryError, setPassportExpiryError] = useState(false);
+  const [generalError, setGeneralError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,28 +55,65 @@ function CheckoutContent() {
       setFormData({ ...formData, [name]: value });
     }
 
-    // Real-time typing ke waqt phone error check karo
+    // Live validation clearing
     if (name === 'phone_number') {
       const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10 };
-      const isNumeric = /^\d*$/.test(value);
-      if (!isNumeric || value.trim().length !== activeCountry.phoneLength) {
-        setPhoneError(true);
-      } else {
+      if (/^\d*$/.test(value) && value.trim().length === activeCountry.phoneLength) {
         setPhoneError(false);
+      }
+    }
+
+    if (name === 'passport_expiry_date') {
+      if (value) {
+        const expiryDate = new Date(value);
+        const today = new Date();
+        const sixMonthsFromNow = new Date();
+        sixMonthsFromNow.setMonth(today.getMonth() + 6);
+
+        if (expiryDate >= sixMonthsFromNow) {
+          setPassportExpiryError(false);
+        }
       }
     }
   };
 
   const handleBooking = async (e) => {
     e.preventDefault();
-    setLoading(setPhoneError(false));
+    setLoading(true);
+    setGeneralError('');
+    setPhoneError(false);
+    setPassportExpiryError(false);
 
+    let hasError = false;
+
+    // 1. Phone Number Validation
     const cleanPhone = formData.phone_number.trim();
     const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10 };
-
     const isNumeric = /^\d+$/.test(cleanPhone);
+    
     if (!isNumeric || cleanPhone.length !== activeCountry.phoneLength) {
       setPhoneError(true);
+      hasError = true;
+    }
+
+    // 2. Passport Expiry Validation (Must be >= 6 months from today)
+    if (formData.passport_expiry_date) {
+      const expiryDate = new Date(formData.passport_expiry_date);
+      const today = new Date();
+      const sixMonthsFromNow = new Date();
+      sixMonthsFromNow.setMonth(today.getMonth() + 6);
+
+      if (expiryDate < sixMonthsFromNow) {
+        setPassportExpiryError(true);
+        hasError = true;
+      }
+    } else {
+      setPassportExpiryError(true);
+      hasError = true;
+    }
+
+    if (hasError) {
+      setGeneralError('Please correct the highlighted fields before proceeding.');
       setLoading(false);
       return;
     }
@@ -106,7 +147,7 @@ function CheckoutContent() {
 
       setOrderResult(data.data);
     } catch (err) {
-      alert(err.message);
+      setGeneralError(err.message);
     } finally {
       setLoading(false);
     }
@@ -129,26 +170,32 @@ function CheckoutContent() {
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Passenger Details</h1>
         
+        {generalError && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium border border-red-200">
+            {generalError}
+          </div>
+        )}
+        
         <form onSubmit={handleBooking} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Given Name</label>
-              <input type="text" name="given_name" placeholder="John" value={formData.given_name} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+              <input type="text" name="given_name" placeholder="John" value={formData.given_name} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Family Name</label>
-              <input type="text" name="family_name" placeholder="Doe" value={formData.family_name} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+              <input type="text" name="family_name" placeholder="Doe" value={formData.family_name} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-              <input type="date" name="born_on" value={formData.born_on} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" required />
+              <input type="date" name="born_on" value={formData.born_on} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="m">Male</option>
                 <option value="f">Female</option>
               </select>
@@ -157,7 +204,7 @@ function CheckoutContent() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
-            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
               {countries.map((c) => (
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
@@ -167,7 +214,7 @@ function CheckoutContent() {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
-              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
                 {countries.map((c) => (
                   <option key={c.code} value={c.dialCode}>{c.name} ({c.dialCode})</option>
                 ))}
@@ -177,7 +224,7 @@ function CheckoutContent() {
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-gray-700">Phone Number</label>
                 {phoneError && (
-                  <span className="text-xs text-red-600 font-bold animate-pulse">
+                  <span className="text-xs text-red-600 font-bold">
                     Please enter correct number
                   </span>
                 )}
@@ -189,7 +236,7 @@ function CheckoutContent() {
                 value={formData.phone_number} 
                 onChange={handleChange} 
                 className={`w-full p-3 border rounded-lg outline-none transition-all duration-200 ${
-                  phoneError ? 'border-red-500 bg-red-50 ring-2 ring-red-200 text-red-900' : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
+                  phoneError ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
                 }`} 
                 required 
               />
@@ -198,17 +245,33 @@ function CheckoutContent() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+            <input type="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Passport Number</label>
-              <input type="text" name="passport_number" placeholder="A1234567" value={formData.passport_number} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
+              <input type="text" name="passport_number" placeholder="A1234567" value={formData.passport_number} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Passport Expiry Date</label>
-              <input type="date" name="passport_expiry_date" value={formData.passport_expiry_date} onChange={handleChange} className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" required />
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700">Passport Expiry Date</label>
+                {passportExpiryError && (
+                  <span className="text-xs text-red-600 font-bold">
+                    Must be valid for 6+ months
+                  </span>
+                )}
+              </div>
+              <input 
+                type="date" 
+                name="passport_expiry_date" 
+                value={formData.passport_expiry_date} 
+                onChange={handleChange} 
+                className={`w-full p-3 border rounded-lg outline-none transition-all duration-200 cursor-pointer ${
+                  passportExpiryError ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-200' : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
+                }`} 
+                required 
+              />
             </div>
           </div>
 
