@@ -17,7 +17,7 @@ const countries = [
   { code: 'JP', name: 'Japan', dialCode: '+81', phoneLength: 10 },
 ];
 
-// Modern Date Selector Component (Day, Month, Year Dropdowns)
+// Trip.com Style Date Selector Component (Day, Month, Year Dropdowns)
 function DateSelector({ label, value, onChange, type = 'dob' }) {
   const currentYear = new Date().getFullYear();
   const years = type === 'dob' 
@@ -50,17 +50,17 @@ function DateSelector({ label, value, onChange, type = 'dob' }) {
 
   return (
     <div className="flex flex-col space-y-1.5">
-      <label className="block text-sm font-semibold text-gray-700">{label}</label>
+      <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider">{label}</label>
       <div className="grid grid-cols-3 gap-3">
-        <select value={day} onChange={handleDayChange} className="p-3 border border-gray-300 rounded-xl bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <select value={day} onChange={handleDayChange} className="p-3.5 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none">
           <option value="" disabled>Day</option>
           {days.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
-        <select value={month} onChange={handleMonthChange} className="p-3 border border-gray-300 rounded-xl bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <select value={month} onChange={handleMonthChange} className="p-3.5 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none">
           <option value="" disabled>Month</option>
           {months.map(m => <option key={m.value} value={m.value}>{m.name}</option>)}
         </select>
-        <select value={year} onChange={handleYearChange} className="p-3 border border-gray-300 rounded-xl bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <select value={year} onChange={handleYearChange} className="p-3.5 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none">
           <option value="" disabled>Year</option>
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
@@ -167,115 +167,143 @@ function CheckoutContent() {
 
   if (orderResult) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 text-center">
-          <div className="text-green-500 text-6xl mb-3">🎉</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h2>
-          <p className="text-gray-600 mb-6">PNR Reference: <span className="font-semibold text-gray-900">{orderResult.booking_reference}</span></p>
-          <a href="/" className="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-2xl shadow-md transition">Book Another Flight</a>
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="text-blue-600 text-5xl mb-3">✓</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Successful!</h2>
+          <p className="text-gray-600 mb-6">Booking Reference (PNR): <span className="font-mono font-bold text-gray-900">{orderResult.booking_reference}</span></p>
+          <a href="/" className="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3.5 rounded-xl shadow transition">Book Another Flight</a>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Passenger Checkout Details</h1>
-        {generalError && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium border border-red-100">{generalError}</div>}
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
+      <div className="max-w-3xl mx-auto space-y-6">
         
-        <form onSubmit={handleBooking} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Given Name</label>
-              <input type="text" name="given_name" placeholder="John" value={formData.given_name} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Family Name</label>
-              <input type="text" name="family_name" placeholder="Doe" value={formData.family_name} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Gender</label>
-              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                <option value="m">Male</option>
-                <option value="f">Female</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Nationality</label>
-              <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none" required>
-                {countries.map((c) => (
-                  <option key={c.code} value={c.code}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <DateSelector 
-            label="Date of Birth" 
-            value={formData.born_on} 
-            onChange={(val) => handleDateChange('born_on', val)} 
-            type="dob"
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Country Code</label>
-              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                {countries.map((c) => (
-                  <option key={c.code} value={c.dialCode}>{c.name} ({c.dialCode})</option>
-                ))}
-              </select>
-            </div>
-            <div className="md:col-span-2">
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-semibold text-gray-700">Phone Number</label>
-                {phoneError && (
-                  <span className="text-xs text-red-600 font-bold animate-pulse">
-                    ⚠ Please enter correct number
-                  </span>
-                )}
-              </div>
-              <input 
-                type="text" 
-                name="phone_number" 
-                placeholder="e.g. 9876543210" 
-                value={formData.phone_number} 
-                onChange={handleChange} 
-                className={`w-full p-3.5 border rounded-xl outline-none transition-all duration-200 ${
-                  phoneError ? 'border-red-500 bg-red-50 ring-2 ring-red-200 text-red-900' : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
-                }`} 
-                required 
-              />
-            </div>
-          </div>
-
+        {/* Header Banner */}
+        <div className="bg-blue-600 text-white p-6 rounded-2xl shadow-md flex justify-between items-center">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
-            <input type="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
+            <h1 className="text-2xl font-bold">Passenger Details</h1>
+            <p className="text-blue-100 text-sm mt-1">Please ensure passenger details match passport information.</p>
           </div>
+          <div className="text-3xl">✈️</div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Passport Number</label>
-              <input type="text" name="passport_number" placeholder="A1234567" value={formData.passport_number} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
+        {generalError && <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-200 shadow-sm">{generalError}</div>}
+        
+        <form onSubmit={handleBooking} className="space-y-6">
+          
+          {/* Passenger Card */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-200 space-y-5">
+            <h2 className="text-lg font-bold text-gray-800 border-b pb-3 flex items-center gap-2">
+              <span>👤</span> Adult Passenger 1
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Given Name / First Name (As on Passport)</label>
+                <input type="text" name="given_name" placeholder="e.g. John" value={formData.given_name} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Surname / Family Name</label>
+                <input type="text" name="family_name" placeholder="e.g. Doe" value={formData.family_name} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+              </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Gender</label>
+                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                  <option value="m">Male</option>
+                  <option value="f">Female</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Nationality</label>
+                <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm" required>
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <DateSelector 
+              label="Date of Birth" 
+              value={formData.born_on} 
+              onChange={(val) => handleDateChange('born_on', val)} 
+              type="dob"
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Passport Number</label>
+                <input type="text" name="passport_number" placeholder="e.g. A1234567" value={formData.passport_number} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+              </div>
+              <div>
+                <DateSelector 
+                  label="Passport Expiry Date" 
+                  value={formData.passport_expiry_date} 
+                  onChange={(val) => handleDateChange('passport_expiry_date', val)} 
+                  type="expiry"
+                />
+              </div>
+            </div>
+
           </div>
 
-          <DateSelector 
-            label="Passport Expiry Date" 
-            value={formData.passport_expiry_date} 
-            onChange={(val) => handleDateChange('passport_expiry_date', val)} 
-            type="expiry"
-          />
+          {/* Contact Information Card */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-200 space-y-5">
+            <h2 className="text-lg font-bold text-gray-800 border-b pb-3 flex items-center gap-2">
+              <span>📞</span> Contact Information (For Booking Updates)
+            </h2>
 
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-4 rounded-2xl mt-6 shadow-lg transition duration-200">
-            {loading ? 'Processing Booking...' : 'Complete Booking'}
+            <div>
+              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Email Address</label>
+              <input type="email" name="email" placeholder="e.g. john.doe@example.com" value={formData.email} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" required />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Country Code</label>
+                <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3.5 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.dialCode}>{c.name} ({c.dialCode})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider">Mobile Phone Number</label>
+                  {phoneError && (
+                    <span className="text-xs text-red-600 font-bold animate-pulse">
+                      ⚠ Please enter correct number
+                    </span>
+                  )}
+                </div>
+                <input 
+                  type="text" 
+                  name="phone_number" 
+                  placeholder="e.g. 9876543210" 
+                  value={formData.phone_number} 
+                  onChange={handleChange} 
+                  className={`w-full p-3.5 border rounded-xl outline-none text-sm transition-all duration-200 ${
+                    phoneError ? 'border-red-500 bg-red-50 ring-2 ring-red-200 text-red-900' : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
+                  }`} 
+                  required 
+                />
+              </div>
+            </div>
+
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold p-4 rounded-2xl shadow-lg transition duration-200 text-base">
+            {loading ? 'Processing Secure Booking...' : 'Complete Booking'}
           </button>
         </form>
+
       </div>
     </div>
   );
