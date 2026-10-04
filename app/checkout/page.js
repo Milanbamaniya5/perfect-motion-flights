@@ -3,18 +3,18 @@
 import { useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 
-// Comprehensive list of countries with nationalities and dial codes
+// Countries with specific required phone number digits length
 const countries = [
-  { code: 'GB', name: 'United Kingdom', dialCode: '+44' },
-  { code: 'IN', name: 'India', dialCode: '+91' },
-  { code: 'US', name: 'United States', dialCode: '+1' },
-  { code: 'CA', name: 'Canada', dialCode: '+1' },
-  { code: 'AU', name: 'Australia', dialCode: '+61' },
-  { code: 'DE', name: 'Germany', dialCode: '+49' },
-  { code: 'FR', name: 'France', dialCode: '+33' },
-  { code: 'AE', name: 'United Arab Emirates', dialCode: '+971' },
-  { code: 'SG', name: 'Singapore', dialCode: '+65' },
-  { code: 'JP', name: 'Japan', dialCode: '+81' },
+  { code: 'GB', name: 'United Kingdom', dialCode: '+44', phoneLength: 10 },
+  { code: 'IN', name: 'India', dialCode: '+91', phoneLength: 10 },
+  { code: 'US', name: 'United States', dialCode: '+1', phoneLength: 10 },
+  { code: 'CA', name: 'Canada', dialCode: '+1', phoneLength: 10 },
+  { code: 'AU', name: 'Australia', dialCode: '+61', phoneLength: 9 },
+  { code: 'DE', name: 'Germany', dialCode: '+49', phoneLength: 10 },
+  { code: 'FR', name: 'France', dialCode: '+33', phoneLength: 9 },
+  { code: 'AE', name: 'United Arab Emirates', dialCode: '+971', phoneLength: 9 },
+  { code: 'SG', name: 'Singapore', dialCode: '+65', phoneLength: 8 },
+  { code: 'JP', name: 'Japan', dialCode: '+81', phoneLength: 10 },
 ];
 
 function CheckoutContent() {
@@ -41,7 +41,6 @@ function CheckoutContent() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Agar nationality change ho toh automatic phone code bhi update kar sakte hain
     if (name === 'nationality') {
       const selectedCountry = countries.find(c => c.code === value);
       setFormData(prev => ({
@@ -59,12 +58,15 @@ function CheckoutContent() {
     setLoading(true);
     setError(null);
 
-    // Validation: Phone number check (must be digits and proper length, e.g., 7 to 15 digits)
     const cleanPhone = formData.phone_number.trim();
-    const phoneRegex = /^\d{7,15}$/;
+    
+    // Find required length based on selected phone code / country
+    const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10, name: 'Selected Country' };
 
-    if (!phoneRegex.test(cleanPhone)) {
-      setError('Please enter a valid phone number (digits only, 7 to 15 digits without country code).');
+    // Check if phone contains only numbers and matches the exact required length
+    const isNumeric = /^\d+$/.test(cleanPhone);
+    if (!isNumeric || cleanPhone.length !== activeCountry.phoneLength) {
+      setError(`Invalid phone number for ${activeCountry.name}. It must be exactly ${activeCountry.phoneLength} digits.`);
       setLoading(false);
       return;
     }
@@ -120,7 +122,7 @@ function CheckoutContent() {
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Passenger Details</h1>
-        {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm">{error}</div>}
+        {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium">{error}</div>}
         
         <form onSubmit={handleBooking} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -167,8 +169,8 @@ function CheckoutContent() {
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-              <input type="text" name="phone_number" placeholder="7849606000" value={formData.phone_number} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (Without country code)</label>
+              <input type="text" name="phone_number" placeholder="e.g. 9876543210" value={formData.phone_number} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
             </div>
           </div>
 
