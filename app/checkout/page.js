@@ -31,6 +31,7 @@ function CheckoutContent() {
     phone_number: '',
     passport_number: '',
     passport_expiry_date: '',
+    payment_type: 'balance', // Payment option
   });
 
   const [loading, setLoading] = useState(false);
@@ -123,6 +124,7 @@ function CheckoutContent() {
       phone_number: fullPhoneNumber,
       passport_number: formData.passport_number,
       passport_expiry_date: formData.passport_expiry_date,
+      payment_type: formData.payment_type,
     };
 
     try {
@@ -161,102 +163,115 @@ function CheckoutContent() {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Passenger Details</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Passenger & Payment Details</h1>
         
-        <form onSubmit={handleBooking} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Given Name</label>
-              <input type="text" name="given_name" placeholder="John" value={formData.given_name} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required />
+        <form onSubmit={handleBooking} className="space-y-6">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Passenger Information</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Given Name</label>
+                <input type="text" name="given_name" placeholder="John" value={formData.given_name} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Family Name</label>
+                <input type="text" name="family_name" placeholder="Doe" value={formData.family_name} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Family Name</label>
-              <input type="text" name="family_name" placeholder="Doe" value={formData.family_name} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-              <input type="date" name="born_on" value={formData.born_on} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none cursor-pointer" required />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                <input type="date" name="born_on" value={formData.born_on} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none cursor-pointer" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none">
+                  <option value="m">Male</option>
+                  <option value="f">Female</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none">
-                <option value="m">Male</option>
-                <option value="f">Female</option>
-              </select>
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
-            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required>
-              {countries.map((c) => (
-                <option key={c.code} value={c.code}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
-              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+              <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required>
                 {countries.map((c) => (
-                  <option key={c.code} value={c.dialCode}>{c.name} ({c.dialCode})</option>
+                  <option key={c.code} value={c.code}>{c.name}</option>
                 ))}
               </select>
             </div>
-            <div className="col-span-2">
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                {phoneError && (
-                  <span style={{ color: 'red' }} className="text-xs font-bold">
-                    Please enter correct number
-                  </span>
-                )}
+
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
+                <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none">
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.dialCode}>{c.name} ({c.dialCode})</option>
+                  ))}
+                </select>
               </div>
-              <input 
-                type="text" 
-                name="phone_number" 
-                placeholder="Enter phone number" 
-                value={formData.phone_number} 
-                onChange={handleChange} 
-                style={phoneError ? { borderColor: 'red', backgroundColor: '#fff5f5', borderWidth: '2px' } : {}}
-                className="w-full p-3 border border-gray-300 rounded-lg outline-none" 
-                required 
-              />
+              <div className="col-span-2">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                  {phoneError && (
+                    <span style={{ color: 'red' }} className="text-xs font-bold">
+                      Please enter correct number
+                    </span>
+                  )}
+                </div>
+                <input 
+                  type="text" 
+                  name="phone_number" 
+                  placeholder="Enter phone number" 
+                  value={formData.phone_number} 
+                  onChange={handleChange} 
+                  style={phoneError ? { borderColor: 'red', backgroundColor: '#fff5f5', borderWidth: '2px' } : {}}
+                  className="w-full p-3 border border-gray-300 rounded-lg outline-none" 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Passport Number</label>
+                <input type="text" name="passport_number" placeholder="A1234567" value={formData.passport_number} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required />
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Passport Expiry Date</label>
+                  {passportExpiryError && (
+                    <span style={{ color: 'red' }} className="text-xs font-bold">
+                      Must be valid for 6+ months
+                    </span>
+                  )}
+                </div>
+                <input 
+                  type="date" 
+                  name="passport_expiry_date" 
+                  value={formData.passport_expiry_date} 
+                  onChange={handleChange} 
+                  style={passportExpiryError ? { borderColor: 'red', backgroundColor: '#fff5f5', borderWidth: '2px' } : {}}
+                  className="w-full p-3 border border-gray-300 rounded-lg outline-none cursor-pointer" 
+                  required 
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4 pt-4">
+            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Payment Method</h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Passport Number</label>
-              <input type="text" name="passport_number" placeholder="A1234567" value={formData.passport_number} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-gray-700">Passport Expiry Date</label>
-                {passportExpiryError && (
-                  <span style={{ color: 'red' }} className="text-xs font-bold">
-                    Must be valid for 6+ months
-                  </span>
-                )}
-              </div>
-              <input 
-                type="date" 
-                name="passport_expiry_date" 
-                value={formData.passport_expiry_date} 
-                onChange={handleChange} 
-                style={passportExpiryError ? { borderColor: 'red', backgroundColor: '#fff5f5', borderWidth: '2px' } : {}}
-                className="w-full p-3 border border-gray-300 rounded-lg outline-none cursor-pointer" 
-                required 
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Payment Type</label>
+              <select name="payment_type" value={formData.payment_type} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none">
+                <option value="balance">Duffel Balance (Test Mode)</option>
+              </select>
             </div>
           </div>
 
