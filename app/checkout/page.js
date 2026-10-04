@@ -1,8 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useRef } from 'react';
-import { Suspense } from 'react';
+import { useState, Suspense } from 'react';
 
 const countries = [
   { code: 'GB', name: 'United Kingdom', dialCode: '+44', phoneLength: 10 },
@@ -17,77 +16,53 @@ const countries = [
   { code: 'JP', name: 'Japan', dialCode: '+81', phoneLength: 10 },
 ];
 
-// Smooth Mobile Scroll Wheel Picker Component
-function ScrollWheelPicker({ label, value, onChange, type = 'dob' }) {
+// Clean Date Selector Component with Dropdowns for Day, Month, Year
+function DateSelector({ label, value, onChange, type = 'dob' }) {
   const currentYear = new Date().getFullYear();
   const years = type === 'dob' 
-    ? Array.from({ length: 90 }, (_, i) => currentYear - 10 - i) // 1936 to 2016
-    : Array.from({ length: 15 }, (_, i) => currentYear + i);     // 2026 to 2040
+    ? Array.from({ length: 90 }, (_, i) => currentYear - 10 - i) 
+    : Array.from({ length: 15 }, (_, i) => currentYear + i);     
 
   const months = [
-    { value: '01', name: 'Jan' }, { value: '02', name: 'Feb' }, { value: '03', name: 'Mar' },
-    { value: '04', name: 'Apr' }, { value: '05', name: 'May' }, { value: '06', name: 'Jun' },
-    { value: '07', name: 'Jul' }, { value: '08', name: 'Aug' }, { value: '09', name: 'Sep' },
-    { value: '10', name: 'Oct' }, { value: '11', name: 'Nov' }, { value: '12', name: 'Dec' }
+    { value: '01', name: 'January' }, { value: '02', name: 'February' }, { value: '03', name: 'March' },
+    { value: '04', name: 'April' }, { value: '05', name: 'May' }, { value: '06', name: 'June' },
+    { value: '07', name: 'July' }, { value: '08', name: 'August' }, { value: '09', name: 'September' },
+    { value: '10', name: 'October' }, { value: '11', name: 'November' }, { value: '12', name: 'December' }
   ];
 
   const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
 
-  // Parse current value (YYYY-MM-DD)
   const parts = value ? value.split('-') : [type === 'dob' ? '1995' : String(currentYear), '01', '01'];
   const [year, month, day] = parts;
 
-  const handleUpdate = (newYear, newMonth, newDay) => {
-    onChange(`${newYear}-${newMonth}-${newDay}`);
+  const handleDayChange = (e) => {
+    onChange(`${year}-${month}-${e.target.value}`);
+  };
+
+  const handleMonthChange = (e) => {
+    onChange(`${year}-${e.target.value}-${day}`);
+  };
+
+  const handleYearChange = (e) => {
+    onChange(`${e.target.value}-${month}-${day}`);
   };
 
   return (
     <div className="flex flex-col space-y-1">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <div className="grid grid-cols-3 gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200 shadow-inner">
-        
-        {/* Day Picker */}
-        <div className="h-28 overflow-y-auto snap-y snap-mandatory scrollbar-none rounded-lg bg-white border border-gray-100 shadow-sm text-center py-2">
-          <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Day</div>
-          {days.map((d) => (
-            <div 
-              key={d} 
-              onClick={() => handleUpdate(year, month, d)}
-              className={`py-1.5 cursor-pointer snap-center text-sm transition-all ${day === d ? 'bg-blue-600 text-white font-bold rounded-md mx-1 shadow' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {/* Month Picker */}
-        <div className="h-28 overflow-y-auto snap-y snap-mandatory scrollbar-none rounded-lg bg-white border border-gray-100 shadow-sm text-center py-2">
-          <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Month</div>
-          {months.map((m) => (
-            <div 
-              key={m.value} 
-              onClick={() => handleUpdate(year, m.value, day)}
-              className={`py-1.5 cursor-pointer snap-center text-sm transition-all ${month === m.value ? 'bg-blue-600 text-white font-bold rounded-md mx-1 shadow' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              {m.name}
-            </div>
-          ))}
-        </div>
-
-        {/* Year Picker */}
-        <div className="h-28 overflow-y-auto snap-y snap-mandatory scrollbar-none rounded-lg bg-white border border-gray-100 shadow-sm text-center py-2">
-          <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Year</div>
-          {years.map((y) => (
-            <div 
-              key={y} 
-              onClick={() => handleUpdate(String(y), month, day)}
-              className={`py-1.5 cursor-pointer snap-center text-sm transition-all ${year === String(y) ? 'bg-blue-600 text-white font-bold rounded-md mx-1 shadow' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              {y}
-            </div>
-          ))}
-        </div>
-
+      <div className="grid grid-cols-3 gap-2">
+        <select value={day} onChange={handleDayChange} className="p-3 border rounded-lg bg-white text-sm">
+          <option value="" disabled>Day</option>
+          {days.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
+        <select value={month} onChange={handleMonthChange} className="p-3 border rounded-lg bg-white text-sm">
+          <option value="" disabled>Month</option>
+          {months.map(m => <option key={m.value} value={m.value}>{m.name}</option>)}
+        </select>
+        <select value={year} onChange={handleYearChange} className="p-3 border rounded-lg bg-white text-sm">
+          <option value="" disabled>Year</option>
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
       </div>
     </div>
   );
@@ -149,7 +124,7 @@ function CheckoutContent() {
 
     const isNumeric = /^\d+$/.test(cleanPhone);
     if (!isNumeric || cleanPhone.length !== activeCountry.phoneLength) {
-      setPhoneError(true); // Sirf phone field red hoga aur unique error message bagal mein aayega
+      setPhoneError(true); 
       setLoading(false);
       return;
     }
@@ -237,8 +212,7 @@ function CheckoutContent() {
             </div>
           </div>
 
-          {/* Smooth Mobile Scroll Wheel for Date of Birth */}
-          <ScrollWheelPicker 
+          <DateSelector 
             label="Date of Birth" 
             value={formData.born_on} 
             onChange={(val) => handleDateChange('born_on', val)} 
@@ -258,7 +232,7 @@ function CheckoutContent() {
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-gray-700">Phone Number</label>
                 {phoneError && (
-                  <span className="text-xs text-red-600 font-bold animate-bounce">
+                  <span className="text-xs text-red-600 font-bold animate-pulse">
                     ⚠ Please enter correct number
                   </span>
                 )}
@@ -289,8 +263,7 @@ function CheckoutContent() {
             </div>
           </div>
 
-          {/* Smooth Mobile Scroll Wheel for Passport Expiry Date */}
-          <ScrollWheelPicker 
+          <DateSelector 
             label="Passport Expiry Date" 
             value={formData.passport_expiry_date} 
             onChange={(val) => handleDateChange('passport_expiry_date', val)} 
