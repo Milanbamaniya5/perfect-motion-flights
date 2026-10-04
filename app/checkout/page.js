@@ -35,8 +35,7 @@ function CheckoutContent() {
 
   const [loading, setLoading] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [phoneError, setPhoneError] = useState(false); // Phone field error state
+  const [phoneError, setPhoneError] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,7 +51,6 @@ function CheckoutContent() {
       setFormData({ ...formData, [name]: value });
     }
 
-    // Agar user phone number type kar raha hai toh error clear karein
     if (name === 'phone_number') {
       setPhoneError(false);
     }
@@ -61,18 +59,16 @@ function CheckoutContent() {
   const handleBooking = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     setPhoneError(false);
 
     const cleanPhone = formData.phone_number.trim();
-    const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10, name: 'Selected Country' };
+    const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10 };
 
     const isNumeric = /^\d+$/.test(cleanPhone);
     if (!isNumeric || cleanPhone.length !== activeCountry.phoneLength) {
-      setPhoneError(true); // Phone field ko red karne ke liye
-      setError(`Please enter correct number. It must be exactly ${activeCountry.phoneLength} digits for ${activeCountry.name}.`);
+      setPhoneError(true);
       setLoading(false);
-      return;
+      return; // Yahin rok dega aur phone field ko red kar dega bina koi alag error banner dikhaye
     }
 
     const fullPhoneNumber = `${formData.phone_code}${cleanPhone}`;
@@ -104,7 +100,7 @@ function CheckoutContent() {
 
       setOrderResult(data.data);
     } catch (err) {
-      setError(err.message);
+      alert(err.message);
     } finally {
       setLoading(false);
     }
@@ -126,7 +122,6 @@ function CheckoutContent() {
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Passenger Details</h1>
-        {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium">{error}</div>}
         
         <form onSubmit={handleBooking} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -177,14 +172,14 @@ function CheckoutContent() {
                 <label className="block text-sm font-medium text-gray-700">Phone Number</label>
                 {phoneError && (
                   <span className="text-xs text-red-600 font-semibold animate-pulse">
-                    ⚠️️ Please enter correct number
+                    Please enter correct number
                   </span>
                 )}
               </div>
               <input 
                 type="text" 
                 name="phone_number" 
-                placeholder="e.g. 9876543210" 
+                placeholder="Enter phone number" 
                 value={formData.phone_number} 
                 onChange={handleChange} 
                 className={`w-full p-3 border rounded-lg transition-all duration-200 ${
