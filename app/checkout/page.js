@@ -1,8 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useRef } from 'react';
-import { Suspense } from 'react';
+import { useState, Suspense } from 'react';
 
 const countries = [
   { code: 'GB', name: 'United Kingdom', dialCode: '+44', phoneLength: 10 },
@@ -17,82 +16,6 @@ const countries = [
   { code: 'JP', name: 'Japan', dialCode: '+81', phoneLength: 10 },
 ];
 
-// Smooth Mobile Scroll Wheel Picker Component
-function ScrollWheelPicker({ label, value, onChange, type = 'dob' }) {
-  const currentYear = new Date().getFullYear();
-  const years = type === 'dob' 
-    ? Array.from({ length: 90 }, (_, i) => currentYear - 10 - i) // 1936 to 2016
-    : Array.from({ length: 15 }, (_, i) => currentYear + i);     // 2026 to 2040
-
-  const months = [
-    { value: '01', name: 'Jan' }, { value: '02', name: 'Feb' }, { value: '03', name: 'Mar' },
-    { value: '04', name: 'Apr' }, { value: '05', name: 'May' }, { value: '06', name: 'Jun' },
-    { value: '07', name: 'Jul' }, { value: '08', name: 'Aug' }, { value: '09', name: 'Sep' },
-    { value: '10', name: 'Oct' }, { value: '11', name: 'Nov' }, { value: '12', name: 'Dec' }
-  ];
-
-  const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
-
-  // Parse current value (YYYY-MM-DD)
-  const parts = value ? value.split('-') : [type === 'dob' ? '1995' : String(currentYear), '01', '01'];
-  const [year, month, day] = parts;
-
-  const handleUpdate = (newYear, newMonth, newDay) => {
-    onChange(`${newYear}-${newMonth}-${newDay}`);
-  };
-
-  return (
-    <div className="flex flex-col space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <div className="grid grid-cols-3 gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200 shadow-inner">
-        
-        {/* Day Picker */}
-        <div className="h-28 overflow-y-auto snap-y snap-mandatory scrollbar-none rounded-lg bg-white border border-gray-100 shadow-sm text-center py-2">
-          <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Day</div>
-          {days.map((d) => (
-            <div 
-              key={d} 
-              onClick={() => handleUpdate(year, month, d)}
-              className={`py-1.5 cursor-pointer snap-center text-sm transition-all ${day === d ? 'bg-blue-600 text-white font-bold rounded-md mx-1 shadow' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              {d}
-            </div>
-          ))}
-        </div>
-
-        {/* Month Picker */}
-        <div className="h-28 overflow-y-auto snap-y snap-mandatory scrollbar-none rounded-lg bg-white border border-gray-100 shadow-sm text-center py-2">
-          <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Month</div>
-          {months.map((m) => (
-            <div 
-              key={m.value} 
-              onClick={() => handleUpdate(year, m.value, day)}
-              className={`py-1.5 cursor-pointer snap-center text-sm transition-all ${month === m.value ? 'bg-blue-600 text-white font-bold rounded-md mx-1 shadow' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              {m.name}
-            </div>
-          ))}
-        </div>
-
-        {/* Year Picker */}
-        <div className="h-28 overflow-y-auto snap-y snap-mandatory scrollbar-none rounded-lg bg-white border border-gray-100 shadow-sm text-center py-2">
-          <div className="text-xs text-gray-400 uppercase font-semibold mb-1">Year</div>
-          {years.map((y) => (
-            <div 
-              key={y} 
-              onClick={() => handleUpdate(String(y), month, day)}
-              className={`py-1.5 cursor-pointer snap-center text-sm transition-all ${year === String(y) ? 'bg-blue-600 text-white font-bold rounded-md mx-1 shadow' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              {y}
-            </div>
-          ))}
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const offerId = searchParams.get('offerId');
@@ -101,19 +24,19 @@ function CheckoutContent() {
     given_name: '',
     family_name: '',
     gender: 'm',
-    born_on: '1995-06-15',
+    born_on: '',
     nationality: 'GB',
     email: '',
     phone_code: '+44',
     phone_number: '',
     passport_number: '',
-    passport_expiry_date: '2030-12-31',
+    passport_expiry_date: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
-  const [generalError, setGeneralError] = useState(null);
-  const [phoneError, setPhoneError] = useState(false);
+  const [error, setError] = useState(null);
+  const [phoneError, setPhoneError] = useState(false); // Phone field error state
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -129,19 +52,16 @@ function CheckoutContent() {
       setFormData({ ...formData, [name]: value });
     }
 
+    // Agar user phone number type kar raha hai toh error clear karein
     if (name === 'phone_number') {
       setPhoneError(false);
     }
   };
 
-  const handleDateChange = (field, newDate) => {
-    setFormData(prev => ({ ...prev, [field]: newDate }));
-  };
-
   const handleBooking = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setGeneralError(null);
+    setError(null);
     setPhoneError(false);
 
     const cleanPhone = formData.phone_number.trim();
@@ -149,7 +69,8 @@ function CheckoutContent() {
 
     const isNumeric = /^\d+$/.test(cleanPhone);
     if (!isNumeric || cleanPhone.length !== activeCountry.phoneLength) {
-      setPhoneError(true); // Sirf phone field red hoga aur unique error message bagal mein aayega
+      setPhoneError(true); // Phone field ko red karne ke liye
+      setError(`Please enter correct number. It must be exactly ${activeCountry.phoneLength} digits for ${activeCountry.name}.`);
       setLoading(false);
       return;
     }
@@ -183,7 +104,7 @@ function CheckoutContent() {
 
       setOrderResult(data.data);
     } catch (err) {
-      setGeneralError(err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -205,9 +126,9 @@ function CheckoutContent() {
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Passenger Details</h1>
-        {generalError && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium">{generalError}</div>}
+        {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium">{error}</div>}
         
-        <form onSubmit={handleBooking} className="space-y-5">
+        <form onSubmit={handleBooking} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Given Name</label>
@@ -221,29 +142,26 @@ function CheckoutContent() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+              <input type="date" name="born_on" value={formData.born_on} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
               <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border rounded-lg">
                 <option value="m">Male</option>
                 <option value="f">Female</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
-              <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border rounded-lg" required>
-                {countries.map((c) => (
-                  <option key={c.code} value={c.code}>{c.name}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
-          {/* Smooth Mobile Scroll Wheel for Date of Birth */}
-          <ScrollWheelPicker 
-            label="Date of Birth" 
-            value={formData.born_on} 
-            onChange={(val) => handleDateChange('born_on', val)} 
-            type="dob"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border rounded-lg" required>
+              {countries.map((c) => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -258,8 +176,8 @@ function CheckoutContent() {
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-gray-700">Phone Number</label>
                 {phoneError && (
-                  <span className="text-xs text-red-600 font-bold animate-bounce">
-                    ⚠ Please enter correct number
+                  <span className="text-xs text-red-600 font-semibold animate-pulse">
+                    ⚠️️ Please enter correct number
                   </span>
                 )}
               </div>
@@ -270,7 +188,7 @@ function CheckoutContent() {
                 value={formData.phone_number} 
                 onChange={handleChange} 
                 className={`w-full p-3 border rounded-lg transition-all duration-200 ${
-                  phoneError ? 'border-red-500 bg-red-50 ring-2 ring-red-300' : 'border-gray-300'
+                  phoneError ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'
                 }`} 
                 required 
               />
@@ -287,15 +205,11 @@ function CheckoutContent() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Passport Number</label>
               <input type="text" name="passport_number" placeholder="A1234567" value={formData.passport_number} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Passport Expiry Date</label>
+              <input type="date" name="passport_expiry_date" value={formData.passport_expiry_date} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+            </div>
           </div>
-
-          {/* Smooth Mobile Scroll Wheel for Passport Expiry Date */}
-          <ScrollWheelPicker 
-            label="Passport Expiry Date" 
-            value={formData.passport_expiry_date} 
-            onChange={(val) => handleDateChange('passport_expiry_date', val)} 
-            type="expiry"
-          />
 
           <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-4 rounded-xl mt-6 shadow">
             {loading ? 'Processing Booking...' : 'Complete Booking'}
