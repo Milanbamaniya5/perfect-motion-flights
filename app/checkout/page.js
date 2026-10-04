@@ -3,7 +3,6 @@
 import { useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 
-// Countries with specific required phone number digits length
 const countries = [
   { code: 'GB', name: 'United Kingdom', dialCode: '+44', phoneLength: 10 },
   { code: 'IN', name: 'India', dialCode: '+91', phoneLength: 10 },
@@ -37,6 +36,7 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
   const [error, setError] = useState(null);
+  const [phoneError, setPhoneError] = useState(false); // Phone field error state
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,22 +51,26 @@ function CheckoutContent() {
     } else {
       setFormData({ ...formData, [name]: value });
     }
+
+    // Agar user phone number type kar raha hai toh error clear karein
+    if (name === 'phone_number') {
+      setPhoneError(false);
+    }
   };
 
   const handleBooking = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setPhoneError(false);
 
     const cleanPhone = formData.phone_number.trim();
-    
-    // Find required length based on selected phone code / country
     const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10, name: 'Selected Country' };
 
-    // Check if phone contains only numbers and matches the exact required length
     const isNumeric = /^\d+$/.test(cleanPhone);
     if (!isNumeric || cleanPhone.length !== activeCountry.phoneLength) {
-      setError(`Invalid phone number for ${activeCountry.name}. It must be exactly ${activeCountry.phoneLength} digits.`);
+      setPhoneError(true); // Phone field ko red karne ke liye
+      setError(`Please enter correct number. It must be exactly ${activeCountry.phoneLength} digits for ${activeCountry.name}.`);
       setLoading(false);
       return;
     }
@@ -169,8 +173,25 @@ function CheckoutContent() {
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (Without country code)</label>
-              <input type="text" name="phone_number" placeholder="e.g. 9876543210" value={formData.phone_number} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                {phoneError && (
+                  <span className="text-xs text-red-600 font-semibold animate-pulse">
+                    ⚠️️ Please enter correct number
+                  </span>
+                )}
+              </div>
+              <input 
+                type="text" 
+                name="phone_number" 
+                placeholder="e.g. 9876543210" 
+                value={formData.phone_number} 
+                onChange={handleChange} 
+                className={`w-full p-3 border rounded-lg transition-all duration-200 ${
+                  phoneError ? 'border-red-500 bg-red-50 ring-2 ring-red-200' : 'border-gray-300'
+                }`} 
+                required 
+              />
             </div>
           </div>
 
