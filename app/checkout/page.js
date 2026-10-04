@@ -38,7 +38,6 @@ function CheckoutContent() {
   
   const [phoneError, setPhoneError] = useState(false);
   const [passportExpiryError, setPassportExpiryError] = useState(false);
-  const [generalError, setGeneralError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -78,7 +77,6 @@ function CheckoutContent() {
   const handleBooking = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setGeneralError('');
     setPhoneError(false);
     setPassportExpiryError(false);
 
@@ -109,7 +107,6 @@ function CheckoutContent() {
     }
 
     if (hasError) {
-      setGeneralError('Please correct the highlighted fields before proceeding.');
       setLoading(false);
       return;
     }
@@ -143,7 +140,7 @@ function CheckoutContent() {
 
       setOrderResult(data.data);
     } catch (err) {
-      setGeneralError(err.message);
+      alert(err.message);
     } finally {
       setLoading(false);
     }
@@ -165,12 +162,6 @@ function CheckoutContent() {
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Passenger Details</h1>
-        
-        {generalError && (
-          <div style={{ color: 'red', backgroundColor: '#fee2e2', borderColor: '#f87171' }} className="p-4 rounded-xl mb-6 text-sm font-semibold border">
-            {generalError}
-          </div>
-        )}
         
         <form onSubmit={handleBooking} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
