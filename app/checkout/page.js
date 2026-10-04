@@ -3,16 +3,19 @@
 import { useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 
-// Country codes mapping for auto-formatting phone number
-const countryCodes = {
-  GB: '+44',
-  IN: '+91',
-  US: '+1',
-  CA: '+1',
-  AU: '+61',
-  DE: '+49',
-  FR: '+33',
-};
+// Comprehensive list of countries with nationalities and dial codes
+const countries = [
+  { code: 'GB', name: 'United Kingdom', dialCode: '+44' },
+  { code: 'IN', name: 'India', dialCode: '+91' },
+  { code: 'US', name: 'United States', dialCode: '+1' },
+  { code: 'CA', name: 'Canada', dialCode: '+1' },
+  { code: 'AU', name: 'Australia', dialCode: '+61' },
+  { code: 'DE', name: 'Germany', dialCode: '+49' },
+  { code: 'FR', name: 'France', dialCode: '+33' },
+  { code: 'AE', name: 'United Arab Emirates', dialCode: '+971' },
+  { code: 'SG', name: 'Singapore', dialCode: '+65' },
+  { code: 'JP', name: 'Japan', dialCode: '+81' },
+];
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -25,6 +28,7 @@ function CheckoutContent() {
     born_on: '',
     nationality: 'GB',
     email: '',
+    phone_code: '+44',
     phone_number: '',
     passport_number: '',
     passport_expiry_date: '',
@@ -35,7 +39,19 @@ function CheckoutContent() {
   const [error, setError] = useState(null);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Agar nationality change ho toh automatic phone code bhi update kar sakte hain
+    if (name === 'nationality') {
+      const selectedCountry = countries.find(c => c.code === value);
+      setFormData(prev => ({
+        ...prev,
+        nationality: value,
+        phone_code: selectedCountry ? selectedCountry.dialCode : prev.phone_code
+      }));
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleBooking = async (e) => {
@@ -43,21 +59,28 @@ function CheckoutContent() {
     setLoading(true);
     setError(null);
 
-    // Auto-format phone number with correct country code if not already included
-    let formattedPhone = formData.phone_number.trim();
-    const prefix = countryCodes[formData.nationality] || '+44';
-    
-    if (!formattedPhone.startsWith('+')) {
-      // Remove leading zero if user typed it (e.g., 07849 -> 7849)
-      if (formattedPhone.startsWith('0')) {
-        formattedPhone = formattedPhone.substring(1);
-      }
-      formattedPhone = `${prefix}${formattedPhone}`;
+    // Validation: Phone number check (must be digits and proper length, e.g., 7 to 15 digits)
+    const cleanPhone = formData.phone_number.trim();
+    const phoneRegex = /^\d{7,15}$/;
+
+    if (!phoneRegex.test(cleanPhone)) {
+      setError('Please enter a valid phone number (digits only, 7 to 15 digits without country code).');
+      setLoading(false);
+      return;
     }
 
+    const fullPhoneNumber = `${formData.phone_code}${cleanPhone}`;
+
     const payloadData = {
-      ...formData,
-      phone_number: formattedPhone,
+      given_name: formData.given_name,
+      family_name: formData.family_name,
+      gender: formData.gender,
+      born_on: formData.born_on,
+      nationality: formData.nationality,
+      email: formData.email,
+      phone_number: fullPhoneNumber,
+      passport_number: formData.passport_number,
+      passport_expiry_date: formData.passport_expiry_date,
     };
 
     try {
@@ -125,20 +148,25 @@ function CheckoutContent() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border rounded-lg" required>
+              {countries.map((c) => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
-              <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border rounded-lg">
-                <option value="GB">United Kingdom (+44)</option>
-                <option value="IN">India (+91)</option>
-                <option value="US">United States (+1)</option>
-                <option value="CA">Canada (+1)</option>
-                <option value="AU">Australia (+61)</option>
-                <option value="DE">Germany (+49)</option>
-                <option value="FR">France (+33)</option>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
+              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border rounded-lg">
+                {countries.map((c) => (
+                  <option key={c.code} value={c.dialCode}>{c.name} ({c.dialCode})</option>
+                ))}
               </select>
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
               <input type="text" name="phone_number" placeholder="7849606000" value={formData.phone_number} onChange={handleChange} className="w-full p-3 border rounded-lg" required />
             </div>
