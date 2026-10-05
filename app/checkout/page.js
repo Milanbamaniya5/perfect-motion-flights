@@ -27,6 +27,7 @@ function CheckoutContent() {
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState(null);
   const [errors, setErrors] = useState({});
+  const [globalError, setGlobalError] = useState('');
 
   useEffect(() => {
     if (!offerId) return;
@@ -35,10 +36,9 @@ function CheckoutContent() {
         const res = await fetch(`/api/orders?offerId=${offerId}`);
         const data = await res.json();
         if (data.offer && data.offer.passengers) {
-          // Offer ke andar jitne bhi passengers honge, un sab ke liye form state banegi
           const initial = data.offer.passengers.map((p) => ({
             id: p.id,
-            type: p.type, // 'adult' ya 'child'
+            type: p.type, // 'adult' or 'child'
             given_name: '',
             family_name: '',
             gender: 'm',
@@ -75,12 +75,13 @@ function CheckoutContent() {
     e.preventDefault();
     setSubmitting(true);
     setErrors({});
+    setGlobalError('');
 
     let newErrors = {};
     let hasError = false;
 
     passengersData.forEach((p, idx) => {
-      // 1. Age Validation (Adult >= 18, Child 0-17)
+      // 1. Strict Age Validation (Adult >= 18, Child 0-17)
       if (p.born_on) {
         const birthDate = new Date(p.born_on);
         const today = new Date();
@@ -91,19 +92,19 @@ function CheckoutContent() {
         }
 
         if (p.type === 'adult' && age < 18) {
-          newErrors[`dob_${idx}`] = 'Adult passenger must be 18+ years old.';
+          newErrors[`dob_${idx}`] = 'Adult must be 18+ years old.';
           hasError = true;
         }
         if (p.type === 'child' && (age < 0 || age > 17)) {
-          newErrors[`dob_${idx}`] = 'Child passenger must be between 0 and 17 years old.';
+          newErrors[`dob_${idx}`] = 'Child age must be between 0 and 17.';
           hasError = true;
         }
       } else {
-        newErrors[`dob_${idx}`] = 'Date of birth is required.';
+        newErrors[`dob_${idx}`] = 'DOB is required.';
         hasError = true;
       }
 
-      // 2. Passport Expiry Validation (6+ months)
+      // 2. Passport Expiry Validation (Must be valid for at least 6 months)
       if (p.passport_expiry_date) {
         const expiryDate = new Date(p.passport_expiry_date);
         const today = new Date();
@@ -134,11 +135,12 @@ function CheckoutContent() {
 
     if (hasError) {
       setErrors(newErrors);
+      setGlobalError('Please fix the highlighted errors before completing the booking.');
       setSubmitting(false);
       return;
     }
 
-    const formattedPassengers = passengersData.map((p, index) => {
+    const formattedPassengers = passengersData.map((p) => {
       let cleanPhone = p.phone_number.trim();
       let formattedPhone = cleanPhone;
       if (p.phone_code === '+44' && cleanPhone.startsWith('0') && cleanPhone.length === 11) {
@@ -174,7 +176,7 @@ function CheckoutContent() {
       if (!res.ok) throw new Error(data.error || 'Failed to create booking');
       setOrderResult(data.data);
     } catch (err) {
-      alert(err.message);
+      setGlobalError(err.message);
     } finally {
       setSubmitting(false);
     }
@@ -199,6 +201,12 @@ function CheckoutContent() {
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Passenger Details ({passengersData.length} Passengers)</h1>
         
+        {globalError && (
+          <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 text-sm font-semibold">
+            {globalError}
+          </div>
+        )}
+
         <form onSubmit={handleBooking} className="space-y-6">
           {passengersData.map((p, index) => (
             <div key={p.id} className="p-5 border border-gray-200 rounded-xl space-y-4 bg-gray-50/50">
