@@ -4,16 +4,19 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  // Aaj ki date ko default set karne ke liye (Format: YYYY-MM-DD)
+  const today = new Date().toISOString().split('T')[0];
+
   const [origin, setOrigin] = useState('LHR');
   const [destination, setDestination] = useState('AMD');
-  const [departureDate, setDepartureDate] = useState('2026-10-04');
+  const [departureDate, setDepartureDate] = useState(today);
   const [adults, setAdults] = useState(1);
   const [childrenAges, setChildrenAges] = useState([]);
   const router = useRouter();
 
   const handleChildCountChange = (count) => {
     const num = parseInt(count) || 0;
-    const newAges = Array(num).fill(5); // Default age 5
+    const newAges = Array(num).fill(5);
     setChildrenAges(newAges);
   };
 
@@ -49,19 +52,27 @@ export default function Home() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Departure Date</label>
-            <input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} className="w-full p-3 border rounded-lg" required />
+            {/* min={today} lagane se purani dates select nahi hongi */}
+            <input 
+              type="date" 
+              min={today}
+              value={departureDate} 
+              onChange={(e) => setDepartureDate(e.target.value)} 
+              className="w-full p-3 border rounded-lg cursor-pointer bg-white" 
+              required 
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Adults (18+)</label>
-              <select value={adults} onChange={(e) => setAdults(parseInt(e.target.value))} className="w-full p-3 border rounded-lg">
+              <select value={adults} onChange={(e) => setAdults(parseInt(e.target.value))} className="w-full p-3 border rounded-lg bg-white">
                 {[1, 2, 3, 4, 5, 6].map(num => <option key={num} value={num}>{num}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Children (0-17)</label>
-              <select value={childrenAges.length} onChange={(e) => handleChildCountChange(e.target.value)} className="w-full p-3 border rounded-lg">
+              <select value={childrenAges.length} onChange={(e) => handleChildCountChange(e.target.value)} className="w-full p-3 border rounded-lg bg-white">
                 {[0, 1, 2, 3, 4].map(num => <option key={num} value={num}>{num}</option>)}
               </select>
             </div>
