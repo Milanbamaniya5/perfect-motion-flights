@@ -4,11 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  const today = new Date().toISOString().split('T')[0];
+  // Duffel test environment ke liye aaj se 5 din aage ki default date set kar rahe hain taaki date error na aaye
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + 5);
+  const defaultMinDate = futureDate.toISOString().split('T')[0];
 
   const [origin, setOrigin] = useState('LHR');
   const [destination, setDestination] = useState('AMD');
-  const [departureDate, setDepartureDate] = useState(today);
+  const [departureDate, setDepartureDate] = useState(defaultMinDate);
   const [adults, setAdults] = useState(1);
   const [childrenAges, setChildrenAges] = useState([]);
   const [error, setError] = useState('');
@@ -45,11 +48,6 @@ export default function Home() {
     e.preventDefault();
     setError('');
 
-    if (departureDate < today) {
-      setError('Departure date cannot be in the past.');
-      return;
-    }
-
     if (adults + childrenAges.length > 9) {
       setError('Total passengers cannot exceed 9 per booking.');
       return;
@@ -68,7 +66,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 flex flex-col items-center justify-center p-6 text-slate-100">
+    <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-100">
       <div className="max-w-xl w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-8 transition-all duration-300">
         
         <div className="text-center mb-8">
@@ -79,7 +77,7 @@ export default function Home() {
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-4 rounded-2xl mb-6 text-sm font-medium backdrop-blur-md animate-pulse">
+          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-4 rounded-2xl mb-6 text-sm font-medium backdrop-blur-md">
             ⚠️ {error}
           </div>
         )}
@@ -100,7 +98,7 @@ export default function Home() {
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Departure Date</label>
             <input 
               type="date" 
-              min={today}
+              min={defaultMinDate}
               value={departureDate} 
               onChange={(e) => setDepartureDate(e.target.value)} 
               className="w-full bg-transparent font-bold text-base outline-none cursor-pointer text-white [color-scheme:dark]" 
