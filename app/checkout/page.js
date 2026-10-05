@@ -34,10 +34,11 @@ function CheckoutContent() {
       try {
         const res = await fetch(`/api/orders?offerId=${offerId}`);
         const data = await res.json();
-        if (data.offer) {
-          const initial = data.offer.passengers.map(p => ({
+        if (data.offer && data.offer.passengers) {
+          // Offer ke andar jitne bhi passengers honge, un sab ke liye form state banegi
+          const initial = data.offer.passengers.map((p) => ({
             id: p.id,
-            type: p.type,
+            type: p.type, // 'adult' ya 'child'
             given_name: '',
             family_name: '',
             gender: 'm',
@@ -79,7 +80,7 @@ function CheckoutContent() {
     let hasError = false;
 
     passengersData.forEach((p, idx) => {
-      // 1. Validate Age (Adult >= 18, Child 0-17)
+      // 1. Age Validation (Adult >= 18, Child 0-17)
       if (p.born_on) {
         const birthDate = new Date(p.born_on);
         const today = new Date();
@@ -90,7 +91,7 @@ function CheckoutContent() {
         }
 
         if (p.type === 'adult' && age < 18) {
-          newErrors[`dob_${idx}`] = 'Adult passenger must be 18 years or older.';
+          newErrors[`dob_${idx}`] = 'Adult passenger must be 18+ years old.';
           hasError = true;
         }
         if (p.type === 'child' && (age < 0 || age > 17)) {
@@ -102,7 +103,7 @@ function CheckoutContent() {
         hasError = true;
       }
 
-      // 2. Validate Passport Expiry (6+ months)
+      // 2. Passport Expiry Validation (6+ months)
       if (p.passport_expiry_date) {
         const expiryDate = new Date(p.passport_expiry_date);
         const today = new Date();
@@ -117,7 +118,7 @@ function CheckoutContent() {
         hasError = true;
       }
 
-      // 3. Validate Phone Number length (UK allows leading zero 11 digits, others standard)
+      // 3. Phone Number Validation
       const cleanPhone = p.phone_number.trim();
       const activeCountry = countries.find(c => c.dialCode === p.phone_code) || { phoneLength: 10 };
       let targetLength = activeCountry.phoneLength;
@@ -137,7 +138,7 @@ function CheckoutContent() {
       return;
     }
 
-    const formattedPassengers = passengersData.map(p => {
+    const formattedPassengers = passengersData.map((p, index) => {
       let cleanPhone = p.phone_number.trim();
       let formattedPhone = cleanPhone;
       if (p.phone_code === '+44' && cleanPhone.startsWith('0') && cleanPhone.length === 11) {
@@ -179,7 +180,7 @@ function CheckoutContent() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading passenger form...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading passengers form...</div>;
 
   if (orderResult) {
     return (
@@ -201,7 +202,7 @@ function CheckoutContent() {
         <form onSubmit={handleBooking} className="space-y-6">
           {passengersData.map((p, index) => (
             <div key={p.id} className="p-5 border border-gray-200 rounded-xl space-y-4 bg-gray-50/50">
-              <h3 className="font-bold text-gray-700 capitalize">
+              <h3 className="font-bold text-gray-700 capitalize text-lg">
                 Passenger {index + 1} ({p.type.toUpperCase()})
               </h3>
 
