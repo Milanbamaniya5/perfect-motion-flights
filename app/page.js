@@ -16,6 +16,11 @@ export default function Home() {
 
   const handleChildCountChange = (count) => {
     const num = parseInt(count) || 0;
+    if (adults + num > 9) {
+      setError('Total passengers cannot exceed 9 per booking.');
+      return;
+    }
+    setError('');
     const newAges = Array(num).fill(5); // Default age 5
     setChildrenAges(newAges);
   };
@@ -26,17 +31,34 @@ export default function Home() {
     setChildrenAges(updated);
   };
 
+  const handleAdultChange = (val) => {
+    const newAdults = parseInt(val);
+    if (newAdults + childrenAges.length > 9) {
+      setError('Total passengers cannot exceed 9 per booking.');
+      return;
+    }
+    setError('');
+    setAdults(newAdults);
+  };
+
+  // 👇 HANDLE SEARCH FUNCTION YAHAN COMPONENT KE ANDAR PASTE HOTA HAI
   const handleSearch = (e) => {
     e.preventDefault();
     setError('');
 
-    // Validation: Departure date cannot be in the past
+    // 1. Departure date validation (Past date check)
     if (departureDate < today) {
       setError('Departure date cannot be in the past.');
       return;
     }
 
-    // Validation: Children age must be between 0 and 17
+    // 2. Total passengers check (Duffel max 9 limit)
+    if (adults + childrenAges.length > 9) {
+      setError('Total passengers cannot exceed 9 per booking.');
+      return;
+    }
+
+    // 3. Children age range check
     for (let i = 0; i < childrenAges.length; i++) {
       if (childrenAges[i] < 0 || childrenAges[i] > 17) {
         setError(`Child ${i + 1} age must be between 0 and 17 years.`);
@@ -53,7 +75,7 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
       <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Duffel Flight Booking ✈️️
+          Duffel Flight Booking ✈️
         </h1>
 
         {error && (
@@ -89,14 +111,16 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Adults (18+)</label>
-              <select value={adults} onChange={(e) => setAdults(parseInt(e.target.value))} className="w-full p-3 border rounded-lg bg-white">
-                {[1, 2, 3, 4, 5, 6].map(num => <option key={num} value={num}>{num}</option>)}
+              <select value={adults} onChange={(e) => handleAdultChange(e.target.value)} className="w-full p-3 border rounded-lg bg-white">
+                {Array.from({ length: 9 }, (_, i) => i + 1).map(num => <option key={num} value={num}>{num}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Children (0-17)</label>
               <select value={childrenAges.length} onChange={(e) => handleChildCountChange(e.target.value)} className="w-full p-3 border rounded-lg bg-white">
-                {[0, 1, 2, 3, 4].map(num => <option key={num} value={num}>{num}</option>)}
+                {Array.from({ length: Math.max(0, 10 - adults) }, (_, i) => (
+                  <option key={i} value={i}>{i}</option>
+                ))}
               </select>
             </div>
           </div>
