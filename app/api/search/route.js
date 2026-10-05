@@ -4,19 +4,29 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const origin = searchParams.get('origin') || 'LHR';
   const destination = searchParams.get('destination') || 'AMD';
-  const departureDate = searchParams.get('departureDate') || '2026-10-04';
+  const departureDate = searchParams.get('departureDate');
   const adultsCount = parseInt(searchParams.get('adults')) || 1;
+  
+  // URL se saari child ages extract kar rahe hain
   const childAges = searchParams.getAll('childAge').map(age => parseInt(age));
 
   const DUFFEL_API_KEY = process.env.DUFFEL_API_KEY;
 
   try {
     const passengersList = [];
+    
+    // Adults add karein
     for (let i = 0; i < adultsCount; i++) {
+      passengersList.type = 'adult';
       passengersList.push({ type: 'adult' });
     }
+    
+    // Children ko unki age ke sath Duffel format ke mutabiq add karein
     childAges.forEach(age => {
-      passengersList.push({ type: 'child', age: age });
+      passengersList.push({ 
+        type: 'child', 
+        age: age 
+      });
     });
 
     const response = await fetch('https://api.duffel.com/air/offer_requests', {
