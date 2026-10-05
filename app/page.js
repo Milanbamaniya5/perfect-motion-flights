@@ -11,11 +11,12 @@ export default function Home() {
   const [departureDate, setDepartureDate] = useState(today);
   const [adults, setAdults] = useState(1);
   const [childrenAges, setChildrenAges] = useState([]);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleChildCountChange = (count) => {
     const num = parseInt(count) || 0;
-    const newAges = Array(num).fill(5); // Default age 5 for children
+    const newAges = Array(num).fill(5); // Default age 5
     setChildrenAges(newAges);
   };
 
@@ -27,7 +28,22 @@ export default function Home() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Har child ki age ko query params mein bhej rahe hain
+    setError('');
+
+    // Validation: Departure date cannot be in the past
+    if (departureDate < today) {
+      setError('Departure date cannot be in the past.');
+      return;
+    }
+
+    // Validation: Children age must be between 0 and 17
+    for (let i = 0; i < childrenAges.length; i++) {
+      if (childrenAges[i] < 0 || childrenAges[i] > 17) {
+        setError(`Child ${i + 1} age must be between 0 and 17 years.`);
+        return;
+      }
+    }
+
     const childParams = childrenAges.map(age => `childAge=${age}`).join('&');
     const queryString = childParams ? `&${childParams}` : '';
     router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
@@ -37,17 +53,24 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
       <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Duffel Flight Booking ✈️
+          Duffel Flight Booking ✈️️
         </h1>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-4 text-sm font-semibold">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">From (Origin)</label>
-              <input type="text" value={origin} onChange={(e) => setOrigin(e.target.value)} className="w-full p-3 border rounded-lg" required />
+              <input type="text" value={origin} onChange={(e) => setOrigin(e.target.value.toUpperCase())} className="w-full p-3 border rounded-lg uppercase" required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">To (Destination)</label>
-              <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} className="w-full p-3 border rounded-lg" required />
+              <input type="text" value={destination} onChange={(e) => setDestination(e.target.value.toUpperCase())} className="w-full p-3 border rounded-lg uppercase" required />
             </div>
           </div>
 
