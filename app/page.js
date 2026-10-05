@@ -4,14 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  // Duffel test environment ke liye aaj se 5 din aage ki default date set kar rahe hain taaki date error na aaye
-  const futureDate = new Date();
-  futureDate.setDate(futureDate.getDate() + 5);
-  const defaultMinDate = futureDate.toISOString().split('T')[0];
+  // Automatically current date (2026-10-06) detect karega
+  const today = new Date().toISOString().split('T')[0];
 
   const [origin, setOrigin] = useState('LHR');
   const [destination, setDestination] = useState('AMD');
-  const [departureDate, setDepartureDate] = useState(defaultMinDate);
+  const [departureDate, setDepartureDate] = useState(today);
   const [adults, setAdults] = useState(1);
   const [childrenAges, setChildrenAges] = useState([]);
   const [error, setError] = useState('');
@@ -47,6 +45,12 @@ export default function Home() {
   const handleSearch = (e) => {
     e.preventDefault();
     setError('');
+
+    // Strict validation: Purani date select hone par turant error show karega
+    if (departureDate < today) {
+      setError('Departure date cannot be in the past.');
+      return;
+    }
 
     if (adults + childrenAges.length > 9) {
       setError('Total passengers cannot exceed 9 per booking.');
@@ -96,9 +100,10 @@ export default function Home() {
 
           <div className="bg-white/5 border border-white/10 p-3 rounded-2xl focus-within:border-blue-400 transition">
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Departure Date</label>
+            {/* min={today} ki wajah se calendar mein aaj se purani dates automatically lock/disable ho jayengi */}
             <input 
               type="date" 
-              min={defaultMinDate}
+              min={today}
               value={departureDate} 
               onChange={(e) => setDepartureDate(e.target.value)} 
               className="w-full bg-transparent font-bold text-base outline-none cursor-pointer text-white [color-scheme:dark]" 
