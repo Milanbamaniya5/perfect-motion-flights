@@ -1,249 +1,118 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+export const dynamic = 'force-dynamic';
 
-export default function Home() {
-  const today = new Date().toISOString().split('T')[0];
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 
-  const [tripType, setTripType] = useState('oneway');
-  const [origin, setOrigin] = useState('LHR');
-  const [destination, setDestination] = useState('AMD');
-  const [departureDate, setDepartureDate] = useState(today);
-  const [adults, setAdults] = useState(1);
-  const [childrenAges, setChildrenAges] = useState([]);
-  const [showPassengerDropdown, setShowPassengerDropdown] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
+function SearchResultsContent() {
+  const searchParams = useSearchParams();
+  const origin = searchParams.get('origin');
+  const destination = searchParams.get('destination');
+  const departureDate = searchParams.get('departureDate');
+  const adults = searchParams.get('adults') || 1;
+  const childAges = searchParams.getAll('childAge');
 
-  const handleChildCountChange = (count) => {
-    const num = parseInt(count) || 0;
-    if (adults + num > 9) {
-      setError('Total passengers cannot exceed 9 per booking.');
-      return;
-    }
-    setError('');
-    const newAges = Array(num).fill(5);
-    setChildrenAges(newAges);
-  };
+  const [offers, setOffers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleChildAgeChange = (index, age) => {
-    const updated = [...childrenAges];
-    updated[index] = parseInt(age);
-    setChildrenAges(updated);
-  };
+  useEffect(() => {
+    if (!origin || !destination) return;
 
-  const handleAdultChange = (val) => {
-    const newAdults = parseInt(val);
-    if (newAdults + childrenAges.length > 9) {
-      setError('Total passengers cannot exceed 9 per booking.');
-      return;
-    }
-    setError('');
-    setAdults(newAdults);
-  };
+    async function fetchFlights() {
+      setLoading(true);
+      try {
+        const childQueryParams = childAges.map(age => `childAge=${age}`).join('&');
+        const queryString = childQueryParams ? `&${childQueryParams}` : '';
+        
+        const res = await fetch(`/api/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
+        const data = await res.json();
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setError('');
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch flights');
 
-    if (departureDate < today) {
-      setError('Departure date cannot be in the past.');
-      return;
-    }
-
-    if (adults + childrenAges.length > 9) {
-      setError('Total passengers cannot exceed 9 per booking.');
-      return;
-    }
-
-    for (let i = 0; i < childrenAges.length; i++) {
-      if (childrenAges[i] < 0 || childrenAges[i] > 17) {
-        setError(`Child ${i + 1} age must be between 0 and 17 years.`);
-        return;
+        setOffers(data.data.offers || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     }
 
-    const childParams = childrenAges.map(age => `childAge=${age}`).join('&');
-    const queryString = childParams ? `&${childParams}` : '';
-    router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
-  };
+    fetchFlights();
+  }, [origin, destination, departureDate, adults]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-blue-600">
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-gray-600 font-semibold animate-pulse">Searching the best flights for you...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 p-6 rounded-3xl max-w-md text-center shadow-lg">
+          <h3 className="font-bold text-lg mb-1">Search Error</h3>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 flex flex-col items-center justify-start p-6 text-slate-800">
-      
-      <div className="text-center mt-12 mb-8 text-white">
-        <h1 className="text-4xl font-black tracking-tight mb-2">Your next take-off awaits</h1>
-        <p className="text-sm text-blue-200">Search flights worldwide with Trip Scanner Hub ✈️</p>
-      </div>
-
-      <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-6 md:p-8 relative">
+    <div className="min-h-screen bg-gray-100 py-10 px-4 text-gray-800">
+      <div className="max-w-4xl mx-auto">
         
-        <div className="flex items-center space-x-8 border-b border-gray-100 pb-4 mb-6">
-          <div className="flex items-center space-x-2 text-blue-600 font-bold border-b-2 border-blue-600 pb-2 cursor-pointer">
-            <span className="text-xl">✈️</span>
-            <span>Flights</span>
+        {/* Top Header Banner */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-black text-gray-900">Available Flights</h1>
+            <p className="text-sm text-gray-500 mt-0.5">{origin} ➔ {destination} • Date: {departureDate}</p>
           </div>
+          <a href="/" className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-4 py-2.5 rounded-xl transition">
+            Modify Search
+          </a>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl mb-6 text-sm font-semibold">
-            ⚠️️ {error}
+        {offers.length === 0 ? (
+          <div className="bg-white border border-gray-200 p-12 rounded-3xl text-center text-gray-500 shadow-sm">
+            No flights found for this route. Try changing dates or airports.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {offers.map((offer) => (
+              <div key={offer.id} className="bg-white hover:shadow-md border border-gray-200 rounded-3xl p-6 flex justify-between items-center transition-all">
+                <div>
+                  <span className="text-xs uppercase tracking-wider font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                    {offer.owner.name}
+                  </span>
+                  <div className="mt-3">
+                    <span className="text-3xl font-black text-gray-900">{offer.total_currency} {offer.total_amount}</span>
+                    <span className="text-xs text-gray-400 block mt-0.5">Includes taxes & airline fees</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => window.location.href = `/checkout?offerId=${offer.id}`}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-blue-600/30 transition transform active:scale-95"
+                >
+                  Book Now ✈️
+                </button>
+              </div>
+            ))}
           </div>
         )}
-
-        <form onSubmit={handleSearch} className="space-y-6">
-          
-          <div className="flex items-center justify-between flex-wrap gap-4 text-sm font-medium text-gray-600">
-            <div className="flex items-center space-x-6">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="tripType" 
-                  checked={tripType === 'return'} 
-                  onChange={() => setTripType('return')} 
-                  className="text-blue-600 focus:ring-blue-500" 
-                />
-                <span>Return</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="tripType" 
-                  checked={tripType === 'oneway'} 
-                  onChange={() => setTripType('oneway')} 
-                  className="text-blue-600 focus:ring-blue-500" 
-                />
-                <span>One-way</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-200">
-            
-            <div className="bg-white p-3 rounded-xl border border-gray-200 hover:border-blue-500 transition">
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Leaving from</label>
-              <input 
-                type="text" 
-                value={origin} 
-                onChange={(e) => setOrigin(e.target.value.toUpperCase())} 
-                className="w-full font-bold text-gray-800 uppercase outline-none bg-transparent" 
-                required 
-              />
-            </div>
-
-            <div className="bg-white p-3 rounded-xl border border-gray-200 hover:border-blue-500 transition">
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Going to</label>
-              <input 
-                type="text" 
-                value={destination} 
-                onChange={(e) => setDestination(e.target.value.toUpperCase())} 
-                className="w-full font-bold text-gray-800 uppercase outline-none bg-transparent" 
-                required 
-              />
-            </div>
-
-            <div className="bg-white p-3 rounded-xl border border-gray-200 hover:border-blue-500 transition flex items-center justify-between">
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Departure</label>
-                <input 
-                  type="date" 
-                  min={today}
-                  value={departureDate} 
-                  onChange={(e) => setDepartureDate(e.target.value)} 
-                  className="font-bold text-gray-800 outline-none bg-transparent cursor-pointer text-sm" 
-                  required 
-                />
-              </div>
-            </div>
-
-            <div className="relative">
-              <div 
-                onClick={() => setShowPassengerDropdown(!showPassengerDropdown)}
-                className="bg-white p-3 rounded-xl border border-gray-200 hover:border-blue-500 transition cursor-pointer h-full flex flex-col justify-center"
-              >
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Passengers & Cabin</label>
-                <div className="font-bold text-gray-800 text-sm truncate">
-                  {adults + childrenAges.length} Passenger{adults + childrenAges.length > 1 ? 's' : ''}, Economy
-                </div>
-              </div>
-
-              {showPassengerDropdown && (
-                <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 z-50 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-gray-800 text-sm">Adults</p>
-                      <p className="text-xs text-gray-400">18 years+</p>
-                    </div>
-                    <select 
-                      value={adults} 
-                      onChange={(e) => handleAdultChange(e.target.value)} 
-                      className="p-2 border rounded-xl font-bold bg-gray-50 outline-none"
-                    >
-                      {Array.from({ length: 9 }, (_, i) => i + 1).map(num => <option key={num} value={num}>{num}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="flex justify-between items-center border-t pt-3">
-                    <div>
-                      <p className="font-bold text-gray-800 text-sm">Children</p>
-                      <p className="text-xs text-gray-400">0 - 17 years</p>
-                    </div>
-                    <select 
-                      value={childrenAges.length} 
-                      onChange={(e) => handleChildCountChange(e.target.value)} 
-                      className="p-2 border rounded-xl font-bold bg-gray-50 outline-none"
-                    >
-                      {Array.from({ length: Math.max(0, 10 - adults) }, (_, i) => (
-                        <option key={i} value={i}>{i}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {childrenAges.length > 0 && (
-                    <div className="space-y-2 border-t pt-3">
-                      <p className="text-xs font-bold text-blue-600 uppercase">Child Ages:</p>
-                      {childrenAges.map((age, idx) => (
-                        <div key={idx} className="flex justify-between items-center text-xs">
-                          <span>Child {idx + 1} age:</span>
-                          <select 
-                            value={age} 
-                            onChange={(e) => handleChildAgeChange(idx, e.target.value)}
-                            className="p-1.5 border rounded-lg bg-gray-50 font-bold"
-                          >
-                            {Array.from({ length: 18 }, (_, i) => <option key={i} value={i}>{i} yrs</option>)}
-                          </select>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPassengerDropdown(false)}
-                    className="w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-sm shadow"
-                  >
-                    Done
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <button 
-              type="submit" 
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-10 py-4 rounded-2xl shadow-lg shadow-blue-600/30 transition transform active:scale-95 flex items-center space-x-2 text-base"
-            >
-              <span>🔍</span>
-              <span>Search Flights</span>
-            </button>
-          </div>
-
-        </form>
       </div>
+    </div>
+  );
+}
 
-    </main>
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-100" />}>
+      <SearchResultsContent />
+    </Suspense>
   );
 }
