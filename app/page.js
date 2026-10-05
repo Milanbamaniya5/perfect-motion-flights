@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  // Aaj ki date ko default set karne ke liye (Format: YYYY-MM-DD)
   const today = new Date().toISOString().split('T')[0];
 
   const [origin, setOrigin] = useState('LHR');
@@ -16,7 +15,7 @@ export default function Home() {
 
   const handleChildCountChange = (count) => {
     const num = parseInt(count) || 0;
-    const newAges = Array(num).fill(5);
+    const newAges = Array(num).fill(5); // Default age 5 for children
     setChildrenAges(newAges);
   };
 
@@ -28,8 +27,10 @@ export default function Home() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    // Har child ki age ko query params mein bhej rahe hain
     const childParams = childrenAges.map(age => `childAge=${age}`).join('&');
-    router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}&${childParams}`);
+    const queryString = childParams ? `&${childParams}` : '';
+    router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
   };
 
   return (
@@ -52,13 +53,12 @@ export default function Home() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Departure Date</label>
-            {/* min={today} lagane se purani dates select nahi hongi */}
             <input 
               type="date" 
               min={today}
               value={departureDate} 
               onChange={(e) => setDepartureDate(e.target.value)} 
-              className="w-full p-3 border rounded-lg cursor-pointer bg-white" 
+              className="w-full p-3 border rounded-lg bg-white cursor-pointer" 
               required 
             />
           </div>
