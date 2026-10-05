@@ -58,25 +58,31 @@ export async function POST(request) {
     const totalAmount = offer.total_amount;
     const currency = offer.total_currency;
 
-    const formattedPassengers = passengers.map((p, index) => ({
-      id: offer.passengers[index] ? offer.passengers[index].id : `pas_${index + 1}`,
-      given_name: p.given_name,
-      family_name: p.family_name,
-      gender: p.gender,
-      born_on: p.born_on,
-      title: p.gender === 'm' ? 'mr' : 'ms',
-      email: p.email,
-      phone_number: p.phone_number,
-      identity_documents: [
-        {
-          type: 'passport',
-          number: p.passport_number,
-          unique_identifier: p.passport_number,
-          expires_on: p.passport_expiry_date,
-          issuing_country_code: p.nationality || 'GB',
-        }
-      ]
-    }));
+    // Mapping passengers and ensuring identity documents have required fields
+    const formattedPassengers = passengers.map((p, index) => {
+      const passportNum = p.passport_number || p.identity_documents?.[0]?.number;
+      const passportExpiry = p.passport_expiry_date || p.identity_documents?.[0]?.expires_on;
+
+      return {
+        id: offer.passengers[index] ? offer.passengers[index].id : `pas_${index + 1}`,
+        given_name: p.given_name,
+        family_name: p.family_name,
+        gender: p.gender,
+        born_on: p.born_on,
+        title: p.gender === 'm' ? 'mr' : 'ms',
+        email: p.email,
+        phone_number: p.phone_number,
+        identity_documents: [
+          {
+            type: 'passport',
+            number: passportNum,
+            unique_identifier: passportNum, // Mandatory field fix
+            expires_on: passportExpiry,       // Mandatory field fix
+            issuing_country_code: p.nationality || 'GB',
+          }
+        ]
+      };
+    });
 
     const orderResponse = await fetch('https://api.duffel.com/air/orders', {
       method: 'POST',
