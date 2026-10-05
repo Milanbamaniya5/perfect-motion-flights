@@ -64,18 +64,18 @@ export default function Home() {
 
     const childParams = childrenAges.map(age => `childAge=${age}`).join('&');
     const queryString = childParams ? `&${childParams}` : '';
-    router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
+    router.push(`/search?origin=${origin.toUpperCase()}&destination=${destination.toUpperCase()}&departureDate=${departureDate}&adults=${adults}${queryString}`);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+    <div className="h-full bg-slate-50 text-slate-800 flex flex-col font-sans min-h-screen">
       
-      {/* Header / Navbar */}
+      {/* Navbar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="bg-indigo-600 text-white p-2 rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-lg">✈️</span>
+              <i className="fa-solid fa-plane-departure text-lg"></i>
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
               Trip Scanner <span className="text-indigo-600">Hub</span>
@@ -83,20 +83,20 @@ export default function Home() {
           </div>
           <div className="flex items-center space-x-4">
             <span className="hidden sm:inline text-sm text-slate-500 font-medium">
-              <span className="text-emerald-500 mr-1">🛡️</span> Powered by Duffel
+              <i className="fa-solid fa-shield-halved text-emerald-500 mr-1"></i> Powered by Duffel
             </span>
           </div>
         </div>
       </header>
 
       {/* Hero / Search Section */}
-      <section className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-900 text-white py-12 px-4 sm:px-6 lg:px-8 shadow-inner">
+      <section className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 text-white py-12 px-4 sm:px-6 lg:px-8 shadow-inner flex-grow">
         <div className="max-w-4xl mx-auto text-center mb-8">
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Compare & Book Cheap Flights Worldwide</h1>
-          <p className="text-indigo-100 text-base sm:text-lg">Discover the best destinations with real-time live availability.</p>
+          <p className="text-indigo-50 text-base sm:text-lg">Discover the best destinations with real-time live availability.</p>
         </div>
 
-        {/* Search Card Container */}
+        {/* Search Card */}
         <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 text-slate-800">
           
           {error && (
@@ -112,10 +112,9 @@ export default function Home() {
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">From</label>
                 <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <span className="text-slate-400 mr-2">🛫</span>
+                  <i className="fa-solid fa-plane-departure text-slate-400 mr-2"></i>
                   <input 
                     type="text" 
-                    id="origin" 
                     value={origin} 
                     onChange={(e) => setOrigin(e.target.value.toUpperCase())} 
                     placeholder="e.g., LHR" 
@@ -129,10 +128,9 @@ export default function Home() {
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">To</label>
                 <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <span className="text-slate-400 mr-2">🛬</span>
+                  <i className="fa-solid fa-plane-arrival text-slate-400 mr-2"></i>
                   <input 
                     type="text" 
-                    id="destination" 
                     value={destination} 
                     onChange={(e) => setDestination(e.target.value.toUpperCase())} 
                     placeholder="e.g., DXB" 
@@ -146,7 +144,7 @@ export default function Home() {
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Departure</label>
                 <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <span className="text-slate-400 mr-2">📅</span>
+                  <i className="fa-regular fa-calendar text-slate-400 mr-2"></i>
                   <input 
                     type="date" 
                     min={today}
@@ -160,12 +158,12 @@ export default function Home() {
 
             </div>
 
-            {/* Passenger Selection Grid */}
+            {/* Passengers (Adults & Children) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Adults (18+)</label>
                 <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <span className="text-slate-400 mr-2">👤</span>
+                  <i className="fa-regular fa-user text-slate-400 mr-2"></i>
                   <select 
                     value={adults} 
                     onChange={(e) => handleAdultChange(e.target.value)} 
@@ -178,10 +176,10 @@ export default function Home() {
                 </div>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Children (0-17)</label>
                 <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <span className="text-slate-400 mr-2">👶</span>
+                  <i className="fa-solid fa-child text-slate-400 mr-2"></i>
                   <select 
                     value={childrenAges.length} 
                     onChange={(e) => handleChildCountChange(e.target.value)} 
@@ -195,7 +193,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Dynamic Children Ages Sub-section */}
+            {/* Children Ages Selector */}
             {childrenAges.length > 0 && (
               <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-3">
                 <label className="block text-xs font-bold text-indigo-900 uppercase tracking-wider">Select Children Ages (0-17 years):</label>
@@ -218,12 +216,12 @@ export default function Home() {
               </div>
             )}
 
-            <div className="pt-3 flex justify-end">
+            <div className="pt-2 flex justify-end">
               <button 
                 type="submit" 
                 className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-indigo-500/25 transition duration-200 flex items-center justify-center space-x-2"
               >
-                <span>🔍</span>
+                <i className="fa-solid fa-magnifying-glass"></i>
                 <span>Search Flights</span>
               </button>
             </div>
@@ -232,7 +230,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="mt-auto bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} Trip Scanner Hub. Built for seamless flight exploration with Duffel API.</p>
       </footer>
 
