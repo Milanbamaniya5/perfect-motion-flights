@@ -15,16 +15,14 @@ export async function GET(request) {
   try {
     const passengersList = [];
     
-    // Adults add karein
+    // Adults ke liye { type: 'adult' }
     for (let i = 0; i < adultsCount; i++) {
-      passengersList.type = 'adult';
       passengersList.push({ type: 'adult' });
     }
     
-    // Children ko unki age ke sath Duffel format ke mutabiq add karein
+    // Children ke liye sirf { age: X } (type field nahi honi chahiye)
     childAges.forEach(age => {
       passengersList.push({ 
-        type: 'child', 
         age: age 
       });
     });
