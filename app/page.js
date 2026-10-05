@@ -70,7 +70,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
       
-      {/* Top Navbar Header (Skyscanner/Trip.com Style) */}
+      {/* Top Navbar Header */}
       <header className="w-full border-b border-slate-800 bg-slate-950/60 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => window.location.href='/'}>
@@ -92,7 +92,6 @@ export default function Home() {
 
       {/* Hero Banner Section */}
       <section className="relative overflow-hidden py-16 px-4 sm:px-6 flex-grow flex flex-col items-center justify-center">
-        {/* Background Decorative Glow */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -120,7 +119,6 @@ export default function Home() {
 
           <form onSubmit={handleSearch} className="space-y-6">
             
-            {/* Route Grid: Origin & Destination */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
@@ -157,10 +155,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Date & Passenger Row */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               
-              {/* Departure Date */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Departure Date</label>
                 <div className="relative">
@@ -176,7 +172,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Adults Selector */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Adults (18+)</label>
                 <select 
@@ -190,7 +185,6 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Children Selector */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Children (0-17)</label>
                 <select 
@@ -206,7 +200,6 @@ export default function Home() {
 
             </div>
 
-            {/* Dynamic Children Ages Sub-card */}
             {childrenAges.length > 0 && (
               <div className="p-5 bg-blue-950/40 border border-blue-500/30 rounded-2xl space-y-3">
                 <label className="block text-xs font-bold uppercase tracking-wider text-blue-400">Select Children Ages (0-17 years):</label>
@@ -226,3 +219,27 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-4.5 rounded-2xl shadow-xl shadow-blue-600/30 hover:shadow-blue-600/50 transform hover:-translate-y-0.5 transition duration-200 text-lg flex items-center justify-center space-x-3 tracking-wide cursor-pointer"
+            >
+              <span>Search Flights</span>
+              <span className="text-xl">🔍</span>
+            </button>
+
+          </form>
+        </div>
+
+      </section>
+
+      {/* Footer */}
+      <footer className="w-full border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500">
+        <p>© {new Date().getFullYear()} Trip Scanner Hub. All rights reserved. Fast & Secure Flight Search Engine.</p>
+      </footer>
+
+    </div>
+  );
+}
