@@ -5,10 +5,20 @@ export async function GET(request) {
   const origin = searchParams.get('origin') || 'LHR';
   const destination = searchParams.get('destination') || 'AMD';
   const departureDate = searchParams.get('departureDate') || '2026-10-04';
+  const adultsCount = parseInt(searchParams.get('adults')) || 1;
+  const childAges = searchParams.getAll('childAge').map(age => parseInt(age));
 
   const DUFFEL_API_KEY = process.env.DUFFEL_API_KEY;
 
   try {
+    const passengersList = [];
+    for (let i = 0; i < adultsCount; i++) {
+      passengersList.push({ type: 'adult' });
+    }
+    childAges.forEach(age => {
+      passengersList.push({ type: 'child', age: age });
+    });
+
     const response = await fetch('https://api.duffel.com/air/offer_requests', {
       method: 'POST',
       headers: {
@@ -18,24 +28,16 @@ export async function GET(request) {
       },
       body: JSON.stringify({
         data: {
-          slices: [
-            {
-              origin: origin,
-              destination: destination,
-              departure_date: departureDate,
-            }
-          ],
-          passengers: [{ type: 'adult' }],
+          slices: [{ origin, destination, departure_date: departureDate }],
+          passengers: passengersList,
           cabin_class: 'economy',
         },
       }),
     });
 
     const data = await response.json();
-
     if (!response.ok) {
-      const errorMessage = data.errors ? JSON.stringify(data.errors) : 'Failed to fetch flight offers';
-      return NextResponse.json({ error: errorMessage }, { status: response.status });
+      return NextResponse.json({ error: JSON.stringify(data.errors) }, { status: response.status });
     }
 
     return NextResponse.json({ success: true, data: data.data });
