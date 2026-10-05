@@ -6,11 +6,10 @@ import { useRouter } from 'next/navigation';
 export default function Home() {
   const today = new Date().toISOString().split('T')[0];
 
-  const [tripType, setTripType] = useState('oneway'); // 'return' or 'oneway'
+  const [tripType, setTripType] = useState('oneway');
   const [origin, setOrigin] = useState('LHR');
   const [destination, setDestination] = useState('AMD');
   const [departureDate, setDepartureDate] = useState(today);
-  const [returnDate, setReturnDate] = useState(today);
   const [adults, setAdults] = useState(1);
   const [childrenAges, setChildrenAges] = useState([]);
   const [showPassengerDropdown, setShowPassengerDropdown] = useState(false);
@@ -73,16 +72,13 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-700 via-indigo-800 to-slate-900 flex flex-col items-center justify-start p-6 text-slate-800">
       
-      {/* Hero Header */}
       <div className="text-center mt-12 mb-8 text-white">
         <h1 className="text-4xl font-black tracking-tight mb-2">Your next take-off awaits</h1>
         <p className="text-sm text-blue-200">Search flights worldwide with Trip Scanner Hub ✈️</p>
       </div>
 
-      {/* Main Search Card */}
       <div className="max-w-5xl w-full bg-white rounded-3xl shadow-2xl p-6 md:p-8 relative">
         
-        {/* Top Category Tab (Only Flights) */}
         <div className="flex items-center space-x-8 border-b border-gray-100 pb-4 mb-6">
           <div className="flex items-center space-x-2 text-blue-600 font-bold border-b-2 border-blue-600 pb-2 cursor-pointer">
             <span className="text-xl">✈️</span>
@@ -92,13 +88,12 @@ export default function Home() {
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl mb-6 text-sm font-semibold">
-            ⚠️ {error}
+            ⚠️️ {error}
           </div>
         )}
 
         <form onSubmit={handleSearch} className="space-y-6">
           
-          {/* Trip Type & Direct flight options */}
           <div className="flex items-center justify-between flex-wrap gap-4 text-sm font-medium text-gray-600">
             <div className="flex items-center space-x-6">
               <label className="flex items-center space-x-2 cursor-pointer">
@@ -124,10 +119,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Inputs Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-200">
             
-            {/* Leaving from */}
             <div className="bg-white p-3 rounded-xl border border-gray-200 hover:border-blue-500 transition">
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Leaving from</label>
               <input 
@@ -139,7 +132,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Going to */}
             <div className="bg-white p-3 rounded-xl border border-gray-200 hover:border-blue-500 transition">
               <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Going to</label>
               <input 
@@ -151,7 +143,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Dates */}
             <div className="bg-white p-3 rounded-xl border border-gray-200 hover:border-blue-500 transition flex items-center justify-between">
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Departure</label>
@@ -166,7 +157,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Passengers & Class Dropdown Trigger */}
             <div className="relative">
               <div 
                 onClick={() => setShowPassengerDropdown(!showPassengerDropdown)}
@@ -178,7 +168,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Passenger Popup Box */}
               {showPassengerDropdown && (
                 <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl p-5 z-50 space-y-4">
                   <div className="flex justify-between items-center">
@@ -242,7 +231,6 @@ export default function Home() {
 
           </div>
 
-          {/* Search Button */}
           <div className="flex justify-end pt-2">
             <button 
               type="submit" 
@@ -256,102 +244,6 @@ export default function Home() {
         </form>
       </div>
 
-    </main>
-  );
-}      }
-    }
-
-    const childParams = childrenAges.map(age => `childAge=${age}`).join('&');
-    const queryString = childParams ? `&${childParams}` : '';
-    router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
-  };
-
-  return (
-    <main className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-slate-100">
-      <div className="max-w-xl w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-8 transition-all duration-300">
-        
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-blue-400 to-indigo-200 bg-clip-text text-transparent">
-            Trip Scanner Hub ✈️
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">Discover and book flights worldwide instantly</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-4 rounded-2xl mb-6 text-sm font-medium backdrop-blur-md">
-            ⚠️ {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSearch} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/5 border border-white/10 p-3 rounded-2xl focus-within:border-blue-400 transition">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">From (Origin)</label>
-              <input type="text" value={origin} onChange={(e) => setOrigin(e.target.value.toUpperCase())} className="w-full bg-transparent font-bold text-lg outline-none uppercase text-white placeholder-slate-500" required />
-            </div>
-            <div className="bg-white/5 border border-white/10 p-3 rounded-2xl focus-within:border-blue-400 transition">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">To (Destination)</label>
-              <input type="text" value={destination} onChange={(e) => setDestination(e.target.value.toUpperCase())} className="w-full bg-transparent font-bold text-lg outline-none uppercase text-white placeholder-slate-500" required />
-            </div>
-          </div>
-
-          <div className="bg-white/5 border border-white/10 p-3 rounded-2xl focus-within:border-blue-400 transition">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Departure Date</label>
-            {/* min={today} ki wajah se calendar mein aaj se purani dates automatically lock/disable ho jayengi */}
-            <input 
-              type="date" 
-              min={today}
-              value={departureDate} 
-              onChange={(e) => setDepartureDate(e.target.value)} 
-              className="w-full bg-transparent font-bold text-base outline-none cursor-pointer text-white [color-scheme:dark]" 
-              required 
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/5 border border-white/10 p-3 rounded-2xl">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Adults (18+)</label>
-              <select value={adults} onChange={(e) => handleAdultChange(e.target.value)} className="w-full bg-transparent font-bold text-base outline-none text-white cursor-pointer [&>option]:bg-slate-900">
-                {Array.from({ length: 9 }, (_, i) => i + 1).map(num => <option key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</option>)}
-              </select>
-            </div>
-            <div className="bg-white/5 border border-white/10 p-3 rounded-2xl">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Children (0-17)</label>
-              <select value={childrenAges.length} onChange={(e) => handleChildCountChange(e.target.value)} className="w-full bg-transparent font-bold text-base outline-none text-white cursor-pointer [&>option]:bg-slate-900">
-                {Array.from({ length: Math.max(0, 10 - adults) }, (_, i) => (
-                  <option key={i} value={i}>{i} Child{i !== 1 ? 'ren' : ''}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {childrenAges.length > 0 && (
-            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-              <label className="block text-xs font-semibold text-blue-300 uppercase tracking-wider">Configure Children Ages (0-17):</label>
-              <div className="grid grid-cols-2 gap-3">
-                {childrenAges.map((age, index) => (
-                  <div key={index} className="flex items-center justify-between bg-black/20 p-2.5 rounded-xl border border-white/5">
-                    <span className="text-xs font-medium text-slate-300">Child {index + 1}:</span>
-                    <select 
-                      value={age} 
-                      onChange={(e) => handleChildAgeChange(index, e.target.value)} 
-                      className="bg-transparent font-bold text-sm text-white outline-none cursor-pointer [&>option]:bg-slate-900"
-                    >
-                      {Array.from({ length: 18 }, (_, i) => (
-                        <option key={i} value={i}>{i} yrs</option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-600/30 transition-all transform active:scale-[0.98]">
-            Search Flights 🚀
-          </button>
-        </form>
-      </div>
     </main>
   );
 }
