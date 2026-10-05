@@ -8,6 +8,7 @@ function SearchResultsContent() {
   const origin = searchParams.get('origin');
   const destination = searchParams.get('destination');
   const departureDate = searchParams.get('departureDate');
+  const adults = searchParams.get('adults') || 1;
 
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,12 +20,10 @@ function SearchResultsContent() {
     async function fetchFlights() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}`);
+        const res = await fetch(`/api/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}`);
         const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to fetch flights');
-        }
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch flights');
 
         setOffers(data.data.offers || []);
       } catch (err) {
@@ -35,20 +34,15 @@ function SearchResultsContent() {
     }
 
     fetchFlights();
-  }, [origin, destination, departureDate]);
+  }, [origin, destination, departureDate, adults]);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center font-semibold">Searching flights via Duffel... ✈</div>;
-  }
-
-  if (error) {
-    return <div className="min-h-screen flex items-center justify-center text-red-500 font-medium">Error: {error}</div>;
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Searching flights... ✈</div>;
+  if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">Error: {error}</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Available Flights ({origin} ➔ {destination})</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Available Flights</h1>
         {offers.length === 0 ? (
           <p className="bg-white p-6 rounded-xl shadow">No flights found.</p>
         ) : (
@@ -61,7 +55,7 @@ function SearchResultsContent() {
                 </div>
                 <button 
                   onClick={() => window.location.href = `/checkout?offerId=${offer.id}`}
-                  className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium"
+                  className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-blue-700"
                 >
                   Select Flight
                 </button>
