@@ -24,13 +24,13 @@ function CheckoutContent() {
     given_name: '',
     family_name: '',
     gender: 'm',
-    born_on: '',
+    born_on: '', // Format: YYYY-MM-DD
     nationality: 'GB',
     email: '',
     phone_code: '+44',
     phone_number: '',
     passport_number: '',
-    passport_expiry_date: '',
+    passport_expiry_date: '', // Format: YYYY-MM-DD
   });
 
   const [loading, setLoading] = useState(false);
@@ -177,12 +177,21 @@ function CheckoutContent() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-              <input type="date" name="born_on" value={formData.born_on} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none cursor-pointer" required />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth (YYYY-MM-DD)</label>
+              {/* Text input for DOB allows direct typing or safe calendar popup without glitching */}
+              <input 
+                type="date" 
+                name="born_on" 
+                max={new Date().toISOString().split('T')[0]}
+                value={formData.born_on} 
+                onChange={handleChange} 
+                className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white" 
+                required 
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none">
+              <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white">
                 <option value="m">Male</option>
                 <option value="f">Female</option>
               </select>
@@ -191,7 +200,7 @@ function CheckoutContent() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
-            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none" required>
+            <select name="nationality" value={formData.nationality} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white" required>
               {countries.map((c) => (
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
@@ -201,7 +210,7 @@ function CheckoutContent() {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
-              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none">
+              <select name="phone_code" value={formData.phone_code} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white">
                 {countries.map((c) => (
                   <option key={c.code} value={c.dialCode}>{c.name} ({c.dialCode})</option>
                 ))}
@@ -251,10 +260,11 @@ function CheckoutContent() {
               <input 
                 type="date" 
                 name="passport_expiry_date" 
+                min={new Date().toISOString().split('T')[0]}
                 value={formData.passport_expiry_date} 
                 onChange={handleChange} 
                 style={passportExpiryError ? { borderColor: 'red', backgroundColor: '#fff5f5', borderWidth: '2px' } : {}}
-                className="w-full p-3 border border-gray-300 rounded-lg outline-none cursor-pointer" 
+                className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white" 
                 required 
               />
             </div>
