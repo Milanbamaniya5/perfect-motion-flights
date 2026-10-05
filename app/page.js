@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
   const today = new Date().toISOString().split('T')[0];
 
   const [origin, setOrigin] = useState('LHR');
@@ -12,7 +13,6 @@ export default function Home() {
   const [adults, setAdults] = useState(1);
   const [childrenAges, setChildrenAges] = useState([]);
   const [error, setError] = useState('');
-  const router = useRouter();
 
   const handleChildCountChange = (count) => {
     const num = parseInt(count) || 0;
@@ -21,7 +21,7 @@ export default function Home() {
       return;
     }
     setError('');
-    const newAges = Array(num).fill(5);
+    const newAges = Array(num).fill(5); // Default age 5
     setChildrenAges(newAges);
   };
 
@@ -64,153 +64,272 @@ export default function Home() {
 
     const childParams = childrenAges.map(age => `childAge=${age}`).join('&');
     const queryString = childParams ? `&${childParams}` : '';
-    router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
+    router.push(`/search?origin=${origin.toUpperCase()}&destination=${destination.toUpperCase()}&departureDate=${departureDate}&adults=${adults}${queryString}`);
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
-      
-      {/* Top Navbar Header */}
-      <header className="w-full border-b border-slate-800 bg-slate-950/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => window.location.href='/'}>
-            <div className="bg-gradient-to-tr from-blue-600 to-cyan-400 p-2.5 rounded-xl shadow-lg shadow-blue-500/20 text-white text-xl">
-              ✈️
+    <div style={{
+      minHeight: '100vh',
+      width: '100%',
+      maxWidth: '100vw',
+      overflowX: 'hidden',
+      backgroundColor: '#0f172a',
+      color: '#f8fafc',
+      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      margin: 0,
+      padding: 0
+    }}>
+      {/* Top Header */}
+      <header style={{
+        backgroundColor: '#1e293b',
+        borderBottom: '1px solid #334155',
+        padding: '14px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => router.push('/')}>
+          <span style={{ fontSize: '22px' }}>✈️</span>
+          <div>
+            <div style={{ fontWeight: '800', fontSize: '16px', color: '#38bdf8' }}>
+              TRIPSCANNER <span style={{ color: '#ffffff', fontWeight: '300' }}>HUB</span>
             </div>
-            <div>
-              <span className="text-xl font-black tracking-wider text-white">TRIPSCANNER</span>
-              <span className="text-xl font-light text-blue-400 ml-1">HUB</span>
-            </div>
+            <div style={{ fontSize: '11px', color: '#94a3b8' }}>tripscannerhub.co.uk</div>
           </div>
-          <div className="hidden sm:flex items-center space-x-6 text-sm font-medium text-slate-300">
-            <span className="hover:text-blue-400 transition cursor-pointer">Explore</span>
-            <span className="hover:text-blue-400 transition cursor-pointer">Flights</span>
-            <span className="hover:text-blue-400 transition cursor-pointer">Support</span>
-          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <a
+            href="https://revolut.me/a_bariya30"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+              color: '#fbbf24',
+              border: '1px solid #f59e0b',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            ☕ Support
+          </a>
         </div>
       </header>
 
-      {/* Hero Banner Section */}
-      <section className="relative overflow-hidden py-16 px-4 sm:px-6 flex-grow flex flex-col items-center justify-center">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="text-center max-w-3xl mx-auto mb-10 z-10">
-          <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/30 px-4 py-1.5 rounded-full text-blue-400 text-xs font-semibold uppercase tracking-wider mb-4">
-            <span>✨ Smart Flight Search Engine</span>
-          </div>
-          <h2 className="text-4xl sm:text-6xl font-black tracking-tight text-white mb-4 leading-tight">
-            Where do you want to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-400">explore next?</span>
-          </h2>
-          <p className="text-slate-400 text-base sm:text-lg max-w-xl mx-auto font-normal">
-            Compare live prices across airlines and book your journey in seconds with absolute confidence.
+      {/* Main Content Container */}
+      <main style={{ maxWidth: '750px', width: '100%', margin: '0 auto', padding: '24px 14px', boxSizing: 'border-box', flex: 1 }}>
+        
+        {/* Hero Banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, #1e3a8a, #0369a1)',
+          padding: '24px 18px',
+          borderRadius: '14px',
+          marginBottom: '20px',
+          textAlign: 'center',
+          border: '1px solid #334155'
+        }}>
+          <h1 style={{ fontSize: '22px', fontWeight: '800', margin: '0 0 8px 0', color: '#ffffff' }}>
+            Smart Global Flight Scanner 🌍
+          </h1>
+          <p style={{ color: '#bae6fd', fontSize: '13px', margin: '0' }}>
+            Compare live prices across airlines and book your journey instantly with real-time passenger verification.
           </p>
         </div>
 
-        {/* Main Floating Search Box Widget */}
-        <div className="w-full max-w-4xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-3xl shadow-2xl p-6 sm:p-8 z-10">
-          
+        {/* Search Widget Box */}
+        <div style={{
+          backgroundColor: '#1e293b',
+          borderRadius: '14px',
+          padding: '20px 18px',
+          border: '1px solid #334155',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+        }}>
+          <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#38bdf8', marginBottom: '16px', marginTop: 0 }}>
+            🔍 Search Available Flights
+          </h2>
+
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-2xl mb-6 text-sm font-medium flex items-center space-x-3">
-              <span>⚠️</span>
-              <span>{error}</span>
+            <div style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid #ef4444',
+              color: '#f87171',
+              padding: '12px',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              fontSize: '13px',
+              fontWeight: '700'
+            }}>
+              ⚠️ {error}
             </div>
           )}
 
-          <form onSubmit={handleSearch} className="space-y-6">
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
-                  <span>From (Origin)</span>
+          <form onSubmit={handleSearch} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94a3b8', marginBottom: '6px' }}>
+                  From (Origin Code)
                 </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 text-lg">🛫</span>
-                  <input 
-                    type="text" 
-                    value={origin} 
-                    onChange={(e) => setOrigin(e.target.value.toUpperCase())} 
-                    className="w-full pl-12 pr-4 py-4 bg-slate-950/80 border border-slate-700 rounded-2xl uppercase font-bold text-white tracking-wide focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition" 
-                    placeholder="e.g. LHR"
-                    required 
-                  />
-                </div>
+                <input 
+                  type="text" 
+                  value={origin} 
+                  onChange={(e) => setOrigin(e.target.value.toUpperCase())} 
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #475569',
+                    backgroundColor: '#0f172a',
+                    color: '#f8fafc',
+                    fontSize: '14px',
+                    textTransform: 'uppercase',
+                    boxSizing: 'border-box',
+                    fontWeight: '700'
+                  }} 
+                  placeholder="e.g. LHR"
+                  required 
+                />
               </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
-                  <span>To (Destination)</span>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94a3b8', marginBottom: '6px' }}>
+                  To (Destination Code)
                 </label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 text-lg">🛬</span>
-                  <input 
-                    type="text" 
-                    value={destination} 
-                    onChange={(e) => setDestination(e.target.value.toUpperCase())} 
-                    className="w-full pl-12 pr-4 py-4 bg-slate-950/80 border border-slate-700 rounded-2xl uppercase font-bold text-white tracking-wide focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition" 
-                    placeholder="e.g. AMD"
-                    required 
-                  />
-                </div>
+                <input 
+                  type="text" 
+                  value={destination} 
+                  onChange={(e) => setDestination(e.target.value.toUpperCase())} 
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #475569',
+                    backgroundColor: '#0f172a',
+                    color: '#f8fafc',
+                    fontSize: '14px',
+                    textTransform: 'uppercase',
+                    boxSizing: 'border-box',
+                    fontWeight: '700'
+                  }} 
+                  placeholder="e.g. AMD"
+                  required 
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Departure Date</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">📅</span>
-                  <input 
-                    type="date" 
-                    min={today}
-                    value={departureDate} 
-                    onChange={(e) => setDepartureDate(e.target.value)} 
-                    className="w-full pl-12 pr-4 py-4 bg-slate-950/80 border border-slate-700 rounded-2xl font-semibold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition cursor-pointer" 
-                    required 
-                  />
-                </div>
-              </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94a3b8', marginBottom: '6px' }}>
+                Departure Date
+              </label>
+              <input 
+                type="date" 
+                min={today}
+                value={departureDate} 
+                onChange={(e) => setDepartureDate(e.target.value)} 
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #475569',
+                  backgroundColor: '#0f172a',
+                  color: '#f8fafc',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxSizing: 'border-box',
+                  fontWeight: '700'
+                }} 
+                required 
+              />
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Adults (18+)</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94a3b8', marginBottom: '6px' }}>
+                  Adults (18+)
+                </label>
                 <select 
                   value={adults} 
                   onChange={(e) => handleAdultChange(e.target.value)} 
-                  className="w-full px-4 py-4 bg-slate-950/80 border border-slate-700 rounded-2xl font-semibold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition cursor-pointer"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #475569',
+                    backgroundColor: '#0f172a',
+                    color: '#f8fafc',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                    fontWeight: '700'
+                  }}
                 >
                   {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
-                    <option key={num} value={num} className="bg-slate-900 text-white">{num} Adult{num > 1 ? 's' : ''}</option>
+                    <option key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Children (0-17)</label>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94a3b8', marginBottom: '6px' }}>
+                  Children (0-17)
+                </label>
                 <select 
                   value={childrenAges.length} 
                   onChange={(e) => handleChildCountChange(e.target.value)} 
-                  className="w-full px-4 py-4 bg-slate-950/80 border border-slate-700 rounded-2xl font-semibold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition cursor-pointer"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #475569',
+                    backgroundColor: '#0f172a',
+                    color: '#f8fafc',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                    fontWeight: '700'
+                  }}
                 >
                   {Array.from({ length: Math.max(0, 10 - adults) }, (_, i) => (
-                    <option key={i} value={i} className="bg-slate-900 text-white">{i} Child{i !== 1 ? 'ren' : ''}</option>
+                    <option key={i} value={i}>{i} Child{i !== 1 ? 'ren' : ''}</option>
                   ))}
                 </select>
               </div>
-
             </div>
 
             {childrenAges.length > 0 && (
-              <div className="p-5 bg-blue-950/40 border border-blue-500/30 rounded-2xl space-y-3">
-                <label className="block text-xs font-bold uppercase tracking-wider text-blue-400">Select Children Ages (0-17 years):</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div style={{
+                backgroundColor: '#0f172a',
+                padding: '14px',
+                borderRadius: '8px',
+                border: '1px solid #334155'
+              }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#38bdf8', marginBottom: '10px' }}>
+                  Select Children Ages (0-17 years):
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
                   {childrenAges.map((age, index) => (
-                    <div key={index} className="flex items-center justify-between bg-slate-900/90 p-3 rounded-xl border border-slate-700 shadow-sm">
-                      <span className="text-xs font-medium text-slate-300">Child {index + 1} Age:</span>
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#1e293b', padding: '8px 10px', borderRadius: '6px', border: '1px solid #475569' }}>
+                      <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '600' }}>Child {index + 1}:</span>
                       <select 
                         value={age} 
                         onChange={(e) => handleChildAgeChange(index, e.target.value)} 
-                        className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg font-semibold text-sm text-white focus:outline-none cursor-pointer"
+                        style={{
+                          padding: '4px 8px',
+                          border: '1px solid #475569',
+                          borderRadius: '4px',
+                          backgroundColor: '#0f172a',
+                          color: '#f8fafc',
+                          fontSize: '13px',
+                          fontWeight: '700'
+                        }}
                       >
                         {Array.from({ length: 18 }, (_, i) => (
                           <option key={i} value={i}>{i} yr{i !== 1 ? 's' : ''}</option>
@@ -224,22 +343,41 @@ export default function Home() {
 
             <button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-black py-4.5 rounded-2xl shadow-xl shadow-blue-600/30 hover:shadow-blue-600/50 transform hover:-translate-y-0.5 transition duration-200 text-lg flex items-center justify-center space-x-3 tracking-wide cursor-pointer"
+              style={{
+                width: '100%',
+                backgroundColor: '#0284c7',
+                color: '#fff',
+                border: 'none',
+                padding: '14px',
+                borderRadius: '8px',
+                fontWeight: '800',
+                fontSize: '15px',
+                cursor: 'pointer',
+                marginTop: '6px',
+                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+              }}
             >
-              <span>Search Flights</span>
-              <span className="text-xl">🔍</span>
+              Search Flights 🚀
             </button>
-
           </form>
         </div>
 
-      </section>
+      </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} Trip Scanner Hub. All rights reserved. Fast & Secure Flight Search Engine.</p>
+      <footer style={{
+        backgroundColor: '#0b1120',
+        borderTop: '1px solid #1e293b',
+        padding: '24px 16px',
+        textAlign: 'center',
+        marginTop: '32px'
+      }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', fontSize: '11px', color: '#64748b', lineHeight: '1.5' }}>
+          © {new Date().getFullYear()} tripscannerhub.co.uk. Real-time Flight Scanner & Booking Platform.
+          <br />
+          Powered by Duffel API & Next.js.
+        </div>
       </footer>
-
     </div>
   );
 }
