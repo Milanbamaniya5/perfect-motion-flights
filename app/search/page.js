@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 
@@ -9,6 +11,9 @@ function SearchResultsContent() {
   const destination = searchParams.get('destination');
   const departureDate = searchParams.get('departureDate');
   const adults = searchParams.get('adults') || 1;
+  
+  // URL se saari child ages extract kar rahe hain
+  const childAges = searchParams.getAll('childAge');
 
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +25,11 @@ function SearchResultsContent() {
     async function fetchFlights() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}`);
+        // Query parameters ko properly construct karna
+        const childQueryParams = childAges.map(age => `childAge=${age}`).join('&');
+        const queryString = childQueryParams ? `&${childQueryParams}` : '';
+        
+        const res = await fetch(`/api/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error || 'Failed to fetch flights');
