@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 
 const countries = [
-  { code: 'GB', name: 'United Kingdom', dialCode: '+44', phoneLength: 10 },
+  { code: 'GB', name: 'United Kingdom', dialCode: '+44', phoneLength: 10, allowLeadingZero: true },
   { code: 'IN', name: 'India', dialCode: '+91', phoneLength: 10 },
   { code: 'US', name: 'United States', dialCode: '+1', phoneLength: 10 },
   { code: 'CA', name: 'Canada', dialCode: '+1', phoneLength: 10 },
@@ -24,13 +24,13 @@ function CheckoutContent() {
     given_name: '',
     family_name: '',
     gender: 'm',
-    born_on: '', // Format: YYYY-MM-DD
+    born_on: '',
     nationality: 'GB',
     email: '',
     phone_code: '+44',
     phone_number: '',
     passport_number: '',
-    passport_expiry_date: '', // Format: YYYY-MM-DD
+    passport_expiry_date: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -53,9 +53,21 @@ function CheckoutContent() {
       setFormData({ ...formData, [name]: value });
     }
 
+    // Real-time live validation for phone number typing
     if (name === 'phone_number') {
       const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10 };
-      if (/^\d*$/.test(value) && value.trim().length === activeCountry.phoneLength) {
+      let targetLength = activeCountry.phoneLength;
+      let cleanVal = value.trim();
+
+      if (formData.phone_code === '+44' && cleanVal.startsWith('0')) {
+        targetLength = 11;
+      }
+
+      if (/^\d*$/.test(cleanVal) && cleanVal.length === targetLength) {
+        setPhoneError(false);
+      } else if (cleanVal.length > 0) {
+        setPhoneError(true);
+      } else {
         setPhoneError(false);
       }
     }
@@ -84,9 +96,19 @@ function CheckoutContent() {
 
     const cleanPhone = formData.phone_number.trim();
     const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10 };
-    const isNumeric = /^\d+$/.test(cleanPhone);
     
-    if (!isNumeric || cleanPhone.length !== activeCountry.phoneLength) {
+    let targetLength = activeCountry.phoneLength;
+    let formattedPhone = cleanPhone;
+
+    if (formData.phone_code === '+44' && cleanPhone.startsWith('0')) {
+      targetLength = 11;
+      if (cleanPhone.length === 11) {
+        formattedPhone = cleanPhone.substring(1); // Drop leading 0 for Duffel API payload
+      }
+    }
+
+    const isNumeric = /^\d+$/.test(cleanPhone);
+    if (!isNumeric || cleanPhone.length !== targetLength) {
       setPhoneError(true);
       hasError = true;
     }
@@ -111,7 +133,7 @@ function CheckoutContent() {
       return;
     }
 
-    const fullPhoneNumber = `${formData.phone_code}${cleanPhone}`;
+    const fullPhoneNumber = `${formData.phone_code}${formattedPhone}`;
 
     const payloadData = {
       given_name: formData.given_name,
@@ -178,14 +200,13 @@ function CheckoutContent() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth (YYYY-MM-DD)</label>
-              {/* Text input for DOB allows direct typing or safe calendar popup without glitching */}
               <input 
                 type="date" 
                 name="born_on" 
                 max={new Date().toISOString().split('T')[0]}
                 value={formData.born_on} 
                 onChange={handleChange} 
-                className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white" 
+                className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white cursor-pointer" 
                 required 
               />
             </div>
@@ -264,7 +285,7 @@ function CheckoutContent() {
                 value={formData.passport_expiry_date} 
                 onChange={handleChange} 
                 style={passportExpiryError ? { borderColor: 'red', backgroundColor: '#fff5f5', borderWidth: '2px' } : {}}
-                className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white" 
+                className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white cursor-pointer" 
                 required 
               />
             </div>
