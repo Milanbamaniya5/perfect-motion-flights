@@ -1,5 +1,35 @@
 import { NextResponse } from 'next/server';
 
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const offerId = searchParams.get('offerId');
+  const DUFFEL_API_KEY = process.env.DUFFEL_API_KEY;
+
+  if (!offerId) {
+    return NextResponse.json({ error: 'Missing offerId' }, { status: 400 });
+  }
+
+  try {
+    const offerRes = await fetch(`https://api.duffel.com/air/offers/${offerId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${DUFFEL_API_KEY}`,
+        'Duffel-Version': 'v2',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const offerData = await offerRes.json();
+    if (!offerRes.ok) {
+      return NextResponse.json({ error: 'Failed to fetch offer details' }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, offer: offerData.data });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -7,10 +37,9 @@ export async function POST(request) {
     const DUFFEL_API_KEY = process.env.DUFFEL_API_KEY;
 
     if (!offer_id || !passengers || !Array.isArray(passengers) || passengers.length === 0) {
-      return NextResponse.json({ error: 'Missing or invalid offer_id or passengers data' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing data' }, { status: 400 });
     }
 
-    // 1. Pehle Duffel se offer details fetch karein taaki exact total amount aur passenger IDs mil sakein
     const offerRes = await fetch(`https://api.duffel.com/air/offers/${offer_id}`, {
       method: 'GET',
       headers: {
@@ -28,11 +57,9 @@ export async function POST(request) {
     const offer = offerData.data;
     const totalAmount = offer.total_amount;
     const currency = offer.total_currency;
-    const duffelPassengerId = offer.passengers[0].id; // Offer ke andar ki official passenger ID
 
-    // 2. Format passengers using the exact ID from the offer
-    const formattedPassengers = passengers.map((p) => ({
-      id: duffelPassengerId, // Yahan offer wali ID use karni hai
+    const formattedPassengers = passengers.map((p, index) => ({
+      id: offer.passengers[index] ? offer.passengers[index].id : `pas_${index + 1}`,
       given_name: p.given_name,
       family_name: p.family_name,
       gender: p.gender,
@@ -51,7 +78,6 @@ export async function POST(request) {
       ]
     }));
 
-    // 3. Create the order with the exact matching payment amount
     const orderResponse = await fetch('https://api.duffel.com/air/orders', {
       method: 'POST',
       headers: {
@@ -66,7 +92,7 @@ export async function POST(request) {
           payments: [
             {
               type: 'balance',
-              amount: totalAmount, // Exact offer amount match karega
+              amount: totalAmount,
               currency: currency
             }
           ]
