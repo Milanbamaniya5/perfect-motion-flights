@@ -7,7 +7,7 @@ export default function Home() {
   const today = new Date().toISOString().split('T')[0];
 
   const [origin, setOrigin] = useState('LHR');
-  const [destination, setDestination] = useState('AMD');
+  const [destination, setDestination] = useState('DXB');
   const [departureDate, setDepartureDate] = useState(today);
   const [adults, setAdults] = useState(1);
   const [childrenAges, setChildrenAges] = useState([]);
@@ -21,7 +21,7 @@ export default function Home() {
       return;
     }
     setError('');
-    const newAges = Array(num).fill(5);
+    const newAges = Array(num).fill(5); // Default age 5
     setChildrenAges(newAges);
   };
 
@@ -68,49 +68,45 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-full bg-slate-50 text-slate-800 flex flex-col font-sans">
-
-      {/* Navbar */}
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+      
+      {/* Header / Navbar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => router.push('/')}>
+          <div className="flex items-center space-x-2">
             <div className="bg-indigo-600 text-white p-2 rounded-xl flex items-center justify-center shadow-md">
               <span className="text-lg">✈️</span>
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
-              TripScanner <span className="text-indigo-600">Hub</span>
+              Trip Scanner <span className="text-indigo-600">Hub</span>
             </span>
           </div>
           <div className="flex items-center space-x-4">
             <span className="hidden sm:inline text-sm text-slate-500 font-medium">
-              🛡️ Powered by Duffel API
+              <span className="text-emerald-500 mr-1">🛡️</span> Powered by Duffel
             </span>
           </div>
         </div>
       </header>
 
       {/* Hero / Search Section */}
-      <section className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 text-white py-12 px-4 sm:px-6 lg:px-8 shadow-inner">
+      <section className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-900 text-white py-12 px-4 sm:px-6 lg:px-8 shadow-inner">
         <div className="max-w-4xl mx-auto text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-            Compare & Book Cheap Flights Worldwide
-          </h1>
-          <p className="text-indigo-50 text-base sm:text-lg">
-            Discover the best destinations with real-time live availability.
-          </p>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Compare & Book Cheap Flights Worldwide</h1>
+          <p className="text-indigo-100 text-base sm:text-lg">Discover the best destinations with real-time live availability.</p>
         </div>
 
-        {/* Search Card */}
+        {/* Search Card Container */}
         <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 text-slate-800">
           
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-4 text-sm font-semibold">
+            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl mb-4 text-sm font-semibold shadow-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSearch} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               
               {/* Origin */}
               <div className="relative">
@@ -119,11 +115,12 @@ export default function Home() {
                   <span className="text-slate-400 mr-2">🛫</span>
                   <input 
                     type="text" 
+                    id="origin" 
                     value={origin} 
                     onChange={(e) => setOrigin(e.target.value.toUpperCase())} 
-                    placeholder="e.g., LHR / JFK" 
+                    placeholder="e.g., LHR" 
                     required 
-                    className="w-full bg-transparent outline-none text-sm font-semibold uppercase" 
+                    className="w-full bg-transparent outline-none text-sm font-semibold uppercase text-slate-800" 
                   />
                 </div>
               </div>
@@ -135,11 +132,12 @@ export default function Home() {
                   <span className="text-slate-400 mr-2">🛬</span>
                   <input 
                     type="text" 
+                    id="destination" 
                     value={destination} 
                     onChange={(e) => setDestination(e.target.value.toUpperCase())} 
-                    placeholder="e.g., DXB / CDG" 
+                    placeholder="e.g., DXB" 
                     required 
-                    className="w-full bg-transparent outline-none text-sm font-semibold uppercase" 
+                    className="w-full bg-transparent outline-none text-sm font-semibold uppercase text-slate-800" 
                   />
                 </div>
               </div>
@@ -155,29 +153,39 @@ export default function Home() {
                     value={departureDate} 
                     onChange={(e) => setDepartureDate(e.target.value)} 
                     required 
-                    className="w-full bg-transparent outline-none text-sm font-semibold cursor-pointer" 
+                    className="w-full bg-transparent outline-none text-sm font-semibold text-slate-800 cursor-pointer" 
                   />
                 </div>
               </div>
 
-              {/* Passengers Selection */}
+            </div>
+
+            {/* Passenger Selection Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Passengers</label>
-                <div className="grid grid-cols-2 gap-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Adults (18+)</label>
+                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
+                  <span className="text-slate-400 mr-2">👤</span>
                   <select 
                     value={adults} 
                     onChange={(e) => handleAdultChange(e.target.value)} 
-                    className="border border-slate-200 rounded-xl px-2 py-2.5 bg-slate-50 text-xs font-semibold outline-none focus:border-indigo-500"
+                    className="w-full bg-transparent outline-none text-sm font-semibold text-slate-800"
                   >
                     {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
                       <option key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</option>
                     ))}
                   </select>
+                </div>
+              </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Children (0-17)</label>
+                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
+                  <span className="text-slate-400 mr-2">👶</span>
                   <select 
                     value={childrenAges.length} 
                     onChange={(e) => handleChildCountChange(e.target.value)} 
-                    className="border border-slate-200 rounded-xl px-2 py-2.5 bg-slate-50 text-xs font-semibold outline-none focus:border-indigo-500"
+                    className="w-full bg-transparent outline-none text-sm font-semibold text-slate-800"
                   >
                     {Array.from({ length: Math.max(0, 10 - adults) }, (_, i) => (
                       <option key={i} value={i}>{i} Child{i !== 1 ? 'ren' : ''}</option>
@@ -185,24 +193,23 @@ export default function Home() {
                   </select>
                 </div>
               </div>
-
             </div>
 
-            {/* Dynamic Children Ages */}
+            {/* Dynamic Children Ages Sub-section */}
             {childrenAges.length > 0 && (
-              <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-2">
+              <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-3">
                 <label className="block text-xs font-bold text-indigo-900 uppercase tracking-wider">Select Children Ages (0-17 years):</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {childrenAges.map((age, index) => (
-                    <div key={index} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-200">
-                      <span className="text-xs font-semibold text-slate-600">Child {index + 1}:</span>
+                    <div key={index} className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-indigo-100 shadow-sm">
+                      <span className="text-xs font-semibold text-slate-700">Child {index + 1} Age:</span>
                       <select 
                         value={age} 
                         onChange={(e) => handleChildAgeChange(index, e.target.value)} 
-                        className="w-full bg-slate-50 p-1 text-xs font-semibold rounded border border-slate-200 outline-none"
+                        className="p-1 border border-slate-200 rounded-md bg-slate-50 font-medium text-xs text-slate-800 outline-none"
                       >
                         {Array.from({ length: 18 }, (_, i) => (
-                          <option key={i} value={i}>{i} yrs</option>
+                          <option key={i} value={i}>{i} yr{i !== 1 ? 's' : ''}</option>
                         ))}
                       </select>
                     </div>
@@ -211,10 +218,10 @@ export default function Home() {
               </div>
             )}
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-3 flex justify-end">
               <button 
                 type="submit" 
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-indigo-500/25 transition duration-200 flex items-center justify-center space-x-2 cursor-pointer"
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-indigo-500/25 transition duration-200 flex items-center justify-center space-x-2"
               >
                 <span>🔍</span>
                 <span>Search Flights</span>
@@ -225,7 +232,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400 mt-auto">
+      <footer className="mt-auto bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400">
         <p>&copy; {new Date().getFullYear()} Trip Scanner Hub. Built for seamless flight exploration with Duffel API.</p>
       </footer>
 
