@@ -21,7 +21,7 @@ export default function Home() {
       return;
     }
     setError('');
-    const newAges = Array(num).fill(5); // Default age 5
+    const newAges = Array(num).fill(5);
     setChildrenAges(newAges);
   };
 
@@ -68,106 +68,108 @@ export default function Home() {
   };
 
   return (
-    <div className="h-full bg-slate-50 text-slate-800 flex flex-col font-sans min-h-screen">
+    <div style={{ backgroundColor: '#f8fafc', minHeight: '100vh', color: '#1e293b', display: 'flex', flexDirection: 'column', fontFamily: 'sans-serif' }}>
       
       {/* Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="bg-indigo-600 text-white p-2 rounded-xl flex items-center justify-center shadow-md">
-              <i className="fa-solid fa-plane-departure text-lg"></i>
+      <header style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '8px 12px', borderRadius: '12px', fontWeight: 'bold' }}>
+              ✈️️
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
-              Trip Scanner <span className="text-indigo-600">Hub</span>
+            <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a' }}>
+              Trip Scanner <span style={{ color: '#4f46e5' }}>Hub</span>
             </span>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="hidden sm:inline text-sm text-slate-500 font-medium">
-              <i className="fa-solid fa-shield-halved text-emerald-500 mr-1"></i> Powered by Duffel
+          <div>
+            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '500' }}>
+              🛡️ Powered by Duffel
             </span>
           </div>
         </div>
       </header>
 
-      {/* Hero / Search Section */}
-      <section className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 text-white py-12 px-4 sm:px-6 lg:px-8 shadow-inner flex-grow">
-        <div className="max-w-4xl mx-auto text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Compare & Book Cheap Flights Worldwide</h1>
-          <p className="text-indigo-50 text-base sm:text-lg">Discover the best destinations with real-time live availability.</p>
+      {/* Hero / Search Section with White Background Card */}
+      <section style={{ background: 'linear-gradient(to right, #4338ca, #4f46e5, #6366f1)', color: '#ffffff', padding: '48px 16px', flexGrow: 1 }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '12px', letterSpacing: '-0.025em' }}>Compare & Book Cheap Flights Worldwide</h1>
+          <p style={{ color: '#eef2ff', fontSize: '16px' }}>Discover the best destinations with real-time live availability.</p>
         </div>
 
-        {/* Search Card */}
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 text-slate-800">
+        {/* Clean White Search Card Box */}
+        <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', padding: '32px', color: '#1e293b' }}>
           
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl mb-4 text-sm font-semibold shadow-sm">
+            <div style={{ backgroundColor: '#fef2f2', borderLeft: '4px solid #ef4444', color: '#b91c1c', padding: '16px', borderRadius: '12px', marginBottom: '20px', fontSize: '14px', fontWeight: '600' }}>
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <form onSubmit={handleSearch} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* Origin, Destination, Date Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
               
-              {/* Origin */}
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">From</label>
-                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <i className="fa-solid fa-plane-departure text-slate-400 mr-2"></i>
+              {/* From */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>From (Origin)</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 14px', backgroundColor: '#f8fafc' }}>
+                  <span style={{ marginRight: '8px' }}>🛫</span>
                   <input 
                     type="text" 
                     value={origin} 
                     onChange={(e) => setOrigin(e.target.value.toUpperCase())} 
                     placeholder="e.g., LHR" 
                     required 
-                    className="w-full bg-transparent outline-none text-sm font-semibold uppercase text-slate-800" 
+                    style={{ width: '100%', backgroundColor: 'transparent', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', textTransform: 'uppercase', color: '#1e293b' }} 
                   />
                 </div>
               </div>
 
-              {/* Destination */}
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">To</label>
-                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <i className="fa-solid fa-plane-arrival text-slate-400 mr-2"></i>
+              {/* To */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>To (Destination)</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 14px', backgroundColor: '#f8fafc' }}>
+                  <span style={{ marginRight: '8px' }}>🛬</span>
                   <input 
                     type="text" 
                     value={destination} 
                     onChange={(e) => setDestination(e.target.value.toUpperCase())} 
                     placeholder="e.g., DXB" 
                     required 
-                    className="w-full bg-transparent outline-none text-sm font-semibold uppercase text-slate-800" 
+                    style={{ width: '100%', backgroundColor: 'transparent', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', textTransform: 'uppercase', color: '#1e293b' }} 
                   />
                 </div>
               </div>
 
-              {/* Departure Date */}
+              {/* Departure */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Departure</label>
-                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <i className="fa-regular fa-calendar text-slate-400 mr-2"></i>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Departure Date</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 14px', backgroundColor: '#f8fafc' }}>
+                  <span style={{ marginRight: '8px' }}>📅</span>
                   <input 
                     type="date" 
                     min={today}
                     value={departureDate} 
                     onChange={(e) => setDepartureDate(e.target.value)} 
                     required 
-                    className="w-full bg-transparent outline-none text-sm font-semibold text-slate-800 cursor-pointer" 
+                    style={{ width: '100%', backgroundColor: 'transparent', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', color: '#1e293b', cursor: 'pointer' }} 
                   />
                 </div>
               </div>
 
             </div>
 
-            {/* Passengers (Adults & Children) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Adults (18+)</label>
-                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <i className="fa-regular fa-user text-slate-400 mr-2"></i>
+            {/* Passengers Selection */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Adults (18+)</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 14px', backgroundColor: '#f8fafc' }}>
+                  <span style={{ marginRight: '8px' }}>👤</span>
                   <select 
                     value={adults} 
                     onChange={(e) => handleAdultChange(e.target.value)} 
-                    className="w-full bg-transparent outline-none text-sm font-semibold text-slate-800"
+                    style={{ width: '100%', backgroundColor: 'transparent', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}
                   >
                     {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
                       <option key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</option>
@@ -176,14 +178,14 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Children (0-17)</label>
-                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
-                  <i className="fa-solid fa-child text-slate-400 mr-2"></i>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px' }}>Children (0-17)</label>
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 14px', backgroundColor: '#f8fafc' }}>
+                  <span style={{ marginRight: '8px' }}>👶</span>
                   <select 
                     value={childrenAges.length} 
                     onChange={(e) => handleChildCountChange(e.target.value)} 
-                    className="w-full bg-transparent outline-none text-sm font-semibold text-slate-800"
+                    style={{ width: '100%', backgroundColor: 'transparent', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', color: '#1e293b' }}
                   >
                     {Array.from({ length: Math.max(0, 10 - adults) }, (_, i) => (
                       <option key={i} value={i}>{i} Child{i !== 1 ? 'ren' : ''}</option>
@@ -193,18 +195,18 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Children Ages Selector */}
+            {/* Children Ages Container */}
             {childrenAges.length > 0 && (
-              <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-3">
-                <label className="block text-xs font-bold text-indigo-900 uppercase tracking-wider">Select Children Ages (0-17 years):</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div style={{ padding: '16px', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#312e81', textTransform: 'uppercase' }}>Select Children Ages (0-17 years):</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                   {childrenAges.map((age, index) => (
-                    <div key={index} className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-indigo-100 shadow-sm">
-                      <span className="text-xs font-semibold text-slate-700">Child {index + 1} Age:</span>
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '10px', border: '1px solid #c7d2fe' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Child {index + 1} Age:</span>
                       <select 
                         value={age} 
                         onChange={(e) => handleChildAgeChange(index, e.target.value)} 
-                        className="p-1 border border-slate-200 rounded-md bg-slate-50 font-medium text-xs text-slate-800 outline-none"
+                        style={{ padding: '4px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', backgroundColor: '#f8fafc', fontSize: '13px', fontWeight: '600' }}
                       >
                         {Array.from({ length: 18 }, (_, i) => (
                           <option key={i} value={i}>{i} yr{i !== 1 ? 's' : ''}</option>
@@ -216,13 +218,13 @@ export default function Home() {
               </div>
             )}
 
-            <div className="pt-2 flex justify-end">
+            {/* Search Submit Button */}
+            <div style={{ paddingTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
               <button 
                 type="submit" 
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-indigo-500/25 transition duration-200 flex items-center justify-center space-x-2"
+                style={{ width: '100%', backgroundColor: '#4f46e5', color: '#ffffff', fontWeight: 'bold', padding: '14px 28px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '16px', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)', transition: 'background 0.2s' }}
               >
-                <i className="fa-solid fa-magnifying-glass"></i>
-                <span>Search Flights</span>
+                🔍 Search Flights
               </button>
             </div>
           </form>
@@ -230,7 +232,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400">
+      <footer style={{ backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '24px 0', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
         <p>&copy; {new Date().getFullYear()} Trip Scanner Hub. Built for seamless flight exploration with Duffel API.</p>
       </footer>
 
