@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState, Suspense } from 'react';
 
 const countries = [
-  { code: 'GB', name: 'United Kingdom', dialCode: '+44', phoneLength: 10, allowLeadingZero: true },
+  { code: 'GB', name: 'United Kingdom', dialCode: '+44', phoneLength: 10 },
   { code: 'IN', name: 'India', dialCode: '+91', phoneLength: 10 },
   { code: 'US', name: 'United States', dialCode: '+1', phoneLength: 10 },
   { code: 'CA', name: 'Canada', dialCode: '+1', phoneLength: 10 },
@@ -53,36 +53,13 @@ function CheckoutContent() {
       setFormData({ ...formData, [name]: value });
     }
 
-    // Real-time live validation for phone number typing
+    // Jaise hi user dubara type karna shuru kare, error hata do
     if (name === 'phone_number') {
-      const activeCountry = countries.find(c => c.dialCode === formData.phone_code) || { phoneLength: 10 };
-      let targetLength = activeCountry.phoneLength;
-      let cleanVal = value.trim();
-
-      if (formData.phone_code === '+44' && cleanVal.startsWith('0')) {
-        targetLength = 11;
-      }
-
-      if (/^\d*$/.test(cleanVal) && cleanVal.length === targetLength) {
-        setPhoneError(false);
-      } else if (cleanVal.length > 0) {
-        setPhoneError(true);
-      } else {
-        setPhoneError(false);
-      }
+      setPhoneError(false);
     }
 
     if (name === 'passport_expiry_date') {
-      if (value) {
-        const expiryDate = new Date(value);
-        const today = new Date();
-        const sixMonthsFromNow = new Date();
-        sixMonthsFromNow.setMonth(today.getMonth() + 6);
-
-        if (expiryDate >= sixMonthsFromNow) {
-          setPassportExpiryError(false);
-        }
-      }
+      setPassportExpiryError(false);
     }
   };
 
@@ -103,7 +80,7 @@ function CheckoutContent() {
     if (formData.phone_code === '+44' && cleanPhone.startsWith('0')) {
       targetLength = 11;
       if (cleanPhone.length === 11) {
-        formattedPhone = cleanPhone.substring(1); // Drop leading 0 for Duffel API payload
+        formattedPhone = cleanPhone.substring(1);
       }
     }
 
@@ -252,8 +229,8 @@ function CheckoutContent() {
                 placeholder="Enter phone number" 
                 value={formData.phone_number} 
                 onChange={handleChange} 
-                style={phoneError ? { borderColor: 'red', backgroundColor: '#fff5f5', borderWidth: '2px' } : {}}
-                className="w-full p-3 border border-gray-300 rounded-lg outline-none" 
+                style={phoneError ? { borderColor: 'red', borderWidth: '2px' } : {}}
+                className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white" 
                 required 
               />
             </div>
@@ -284,7 +261,7 @@ function CheckoutContent() {
                 min={new Date().toISOString().split('T')[0]}
                 value={formData.passport_expiry_date} 
                 onChange={handleChange} 
-                style={passportExpiryError ? { borderColor: 'red', backgroundColor: '#fff5f5', borderWidth: '2px' } : {}}
+                style={passportExpiryError ? { borderColor: 'red', borderWidth: '2px' } : {}}
                 className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white cursor-pointer" 
                 required 
               />
