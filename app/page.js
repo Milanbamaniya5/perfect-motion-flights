@@ -7,7 +7,7 @@ export default function Home() {
   const today = new Date().toISOString().split('T')[0];
 
   const [origin, setOrigin] = useState('LHR');
-  const [destination, setDestination] = useState('JFK');
+  const [destination, setDestination] = useState('AMD');
   const [departureDate, setDepartureDate] = useState(today);
   const [adults, setAdults] = useState(1);
   const [childrenAges, setChildrenAges] = useState([]);
@@ -21,7 +21,7 @@ export default function Home() {
       return;
     }
     setError('');
-    const newAges = Array(num).fill(5);
+    const newAges = Array(num).fill(5); // Default age 5
     setChildrenAges(newAges);
   };
 
@@ -62,6 +62,177 @@ export default function Home() {
       }
     }
 
+    const childParams = childrenAges.map(age => `childAge=${age}`).join('&');
+    const queryString = childParams ? `&${childParams}` : '';
+    router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
+  };
+
+  return (
+    <div className="h-full bg-slate-50 text-slate-800 flex flex-col font-sans min-h-screen">
+      
+      {/* Navbar (Exact White Background Match) */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => router.push('/')}>
+            <div className="bg-indigo-600 text-white p-2 rounded-xl flex items-center justify-center shadow-md">
+              <span className="text-lg">✈️</span>
+            </div>
+            <span className="text-xl font-bold tracking-tight text-slate-900">
+              TripScanner <span className="text-indigo-600">Hub</span>
+            </span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="hidden sm:inline text-sm text-slate-500 font-medium">
+              🛡️ Powered by Duffel API
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero / Search Section with Indigo Gradient */}
+      <section className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 text-white py-12 px-4 sm:px-6 lg:px-8 shadow-inner">
+        <div className="max-w-4xl mx-auto text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+            Compare & Book Cheap Flights Worldwide
+          </h1>
+          <p className="text-indigo-50 text-base sm:text-lg">
+            Discover the best destinations with real-time live availability.
+          </p>
+        </div>
+
+        {/* Search Card Box */}
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 text-slate-800">
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl mb-4 text-sm font-semibold">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSearch} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* Origin */}
+              <div className="relative">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">From</label>
+                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
+                  <span className="text-slate-400 mr-2">🛫</span>
+                  <input 
+                    type="text" 
+                    value={origin} 
+                    onChange={(e) => setOrigin(e.target.value.toUpperCase())} 
+                    placeholder="e.g., LHR / JFK" 
+                    required 
+                    className="w-full bg-transparent outline-none text-sm font-semibold uppercase" 
+                  />
+                </div>
+              </div>
+
+              {/* Destination */}
+              <div className="relative">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">To</label>
+                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
+                  <span className="text-slate-400 mr-2">🛬</span>
+                  <input 
+                    type="text" 
+                    value={destination} 
+                    onChange={(e) => setDestination(e.target.value.toUpperCase())} 
+                    placeholder="e.g., DXB / CDG" 
+                    required 
+                    className="w-full bg-transparent outline-none text-sm font-semibold uppercase" 
+                  />
+                </div>
+              </div>
+
+              {/* Departure Date */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Departure</label>
+                <div className="flex items-center border border-slate-200 rounded-xl px-3 py-2.5 focus-within:border-indigo-500 bg-slate-50">
+                  <span className="text-slate-400 mr-2">📅</span>
+                  <input 
+                    type="date" 
+                    min={today}
+                    value={departureDate} 
+                    onChange={(e) => setDepartureDate(e.target.value)} 
+                    required 
+                    className="w-full bg-transparent outline-none text-sm font-semibold cursor-pointer" 
+                  />
+                </div>
+              </div>
+
+              {/* Adults & Children Selection Container */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Passengers</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <select 
+                    value={adults} 
+                    onChange={(e) => handleAdultChange(e.target.value)} 
+                    className="border border-slate-200 rounded-xl px-2 py-2.5 bg-slate-50 text-xs font-semibold outline-none focus:border-indigo-500"
+                  >
+                    {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
+                      <option key={num} value={num}>{num} Adult{num > 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
+
+                  <select 
+                    value={childrenAges.length} 
+                    onChange={(e) => handleChildCountChange(e.target.value)} 
+                    className="border border-slate-200 rounded-xl px-2 py-2.5 bg-slate-50 text-xs font-semibold outline-none focus:border-indigo-500"
+                  >
+                    {Array.from({ length: Math.max(0, 10 - adults) }, (_, i) => (
+                      <option key={i} value={i}>{i} Child{i !== 1 ? 'ren' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Dynamic Children Ages Sub-section */}
+            {childrenAges.length > 0 && (
+              <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-2">
+                <label className="block text-xs font-bold text-indigo-900 uppercase tracking-wider">Select Children Ages (0-17 years):</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {childrenAges.map((age, index) => (
+                    <div key={index} className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-indigo-200">
+                      <span className="text-xs font-semibold text-slate-600">Child {index + 1}:</span>
+                      <select 
+                        value={age} 
+                        onChange={(e) => handleChildAgeChange(index, e.target.value)} 
+                        className="w-full bg-slate-50 p-1 text-xs font-semibold rounded border border-slate-200 outline-none"
+                      >
+                        {Array.from({ length: 18 }, (_, i) => (
+                          <option key={i} value={i}>{i} yrs</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Search Button */}
+            <div className="pt-2 flex justify-end">
+              <button 
+                type="submit" 
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-indigo-500/25 transition duration-200 flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <span>🔍</span>
+                <span>Search Flights</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400 mt-auto">
+        <p>&copy; {new Date().getFullYear()} Trip Scanner Hub. Built for seamless flight exploration with Duffel API.</p>
+      </footer>
+
+    </div>
+  );
+}
     const childParams = childrenAges.map(age => `childAge=${age}`).join('&');
     const queryString = childParams ? `&${childParams}` : '';
     router.push(`/search?origin=${origin}&destination=${destination}&departureDate=${departureDate}&adults=${adults}${queryString}`);
