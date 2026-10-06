@@ -3,105 +3,99 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function HomePage() {
-  const router = useRouter();
-
-  const [tripType, setTripType] = useState('return');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [departureDate, setDepartureDate] = useState('');
-  const [returnDate, setReturnDate] = useState('');
-
-  const [adults, setAdults] = useState(1);
-
-  const [children, setChildren] = useState([]);
-  const [infants, setInfants] = useState([]);
-
-  const [cabin, setCabin] = useState('economy');
-  const [showPassengers, setShowPassengers] = useState(false);
-
+export default function Home() {
   const today = new Date().toISOString().split('T')[0];
 
-  function addChild() {
-    setChildren([...children, 5]);
+  const [tripType, setTripType] = useState('return');
+  const [origin, setOrigin] = useState('LHR');
+  const [destination, setDestination] = useState('AMD');
+  const [departureDate, setDepartureDate] = useState('');
+  const [returnDate, setReturnDate] = useState('');
+  const [adults, setAdults] = useState(1);
+  const [childrenAges, setChildrenAges] = useState([]);
+  const [infantAges, setInfantAges] = useState([]);
+  const [cabin, setCabin] = useState('economy');
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState('');
+
+  const router = useRouter();
+
+  function setChildCount(count) {
+    const n = Number(count);
+
+    const next = Array.from(
+      { length: n },
+      (_, i) => childrenAges[i] ?? 5
+    );
+
+    setChildrenAges(next);
   }
 
-  function removeChild(index) {
-    setChildren(children.filter((_, i) => i !== index));
+  function setInfantCount(count) {
+    const n = Number(count);
+
+    const next = Array.from(
+      { length: n },
+      (_, i) => infantAges[i] ?? 0
+    );
+
+    setInfantAges(next);
   }
 
-  function updateChildAge(index, age) {
-    const updated = [...children];
-    updated[index] = Number(age);
-    setChildren(updated);
-  }
-
-  function addInfant() {
-    setInfants([...infants, 0]);
-  }
-
-  function removeInfant(index) {
-    setInfants(infants.filter((_, i) => i !== index));
-  }
-
-  function updateInfantAge(index, age) {
-    const updated = [...infants];
-    updated[index] = Number(age);
-    setInfants(updated);
-  }
-
-  function swapLocations() {
-    const oldFrom = from;
-    setFrom(to);
-    setTo(oldFrom);
-  }
-
-  function handleSearch(e) {
+  function search(e) {
     e.preventDefault();
+    setError('');
 
-    if (!from.trim()) {
-      alert('Please enter departure airport or city.');
-      return;
+    if (!origin.trim() || origin.trim().length !== 3) {
+      return setError('Please enter a valid 3-letter departure airport code.');
     }
 
-    if (!to.trim()) {
-      alert('Please enter destination airport or city.');
-      return;
+    if (!destination.trim() || destination.trim().length !== 3) {
+      return setError('Please enter a valid 3-letter destination airport code.');
     }
 
     if (!departureDate) {
-      alert('Please select departure date.');
-      return;
+      return setError('Please select a departure date.');
     }
 
-    if (tripType === 'return' && !returnDate) {
-      alert('Please select return date.');
-      return;
+    if (
+      tripType === 'return' &&
+      (!returnDate || returnDate < departureDate)
+    ) {
+      return setError('Please select a valid return date.');
     }
 
-    if (tripType === 'return' && returnDate < departureDate) {
-      alert('Return date cannot be before departure date.');
-      return;
+    const totalPassengers =
+      adults +
+      childrenAges.length +
+      infantAges.length;
+
+    if (totalPassengers > 9) {
+      return setError('Maximum 9 passengers per booking.');
     }
 
-    const params = new URLSearchParams();
+    if (infantAges.length > adults) {
+      return setError('There cannot be more infants than adults.');
+    }
 
-    params.set('from', from.trim());
-    params.set('to', to.trim());
-    params.set('departureDate', departureDate);
-    params.set('tripType', tripType);
-    params.set('adults', String(adults));
-    params.set('cabin', cabin);
+    const params = new URLSearchParams({
+      origin: origin.trim().toUpperCase(),
+      destination: destination.trim().toUpperCase(),
+      departureDate,
+      adults: String(adults),
+      cabin,
+      tripType,
+    });
 
     if (tripType === 'return') {
       params.set('returnDate', returnDate);
     }
 
-    children.forEach((age) => {
+    childrenAges.forEach((age) => {
       params.append('childAge', String(age));
     });
 
-    infants.forEach((age) => {
+    infantAges.forEach((age) => {
       params.append('infantAge', String(age));
     });
 
@@ -109,536 +103,384 @@ export default function HomePage() {
   }
 
   const totalPassengers =
-    adults + children.length + infants.length;
+    adults +
+    childrenAges.length +
+    infantAges.length;
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] text-slate-900">
-
-      {/* HEADER */}
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
-
-          <div
-            className="text-2xl font-extrabold tracking-tight cursor-pointer"
-            onClick={() => router.push('/')}
-          >
-            <span className="text-blue-600">Trip</span>{' '}
-            <span className="text-slate-900">Scanner</span>{' '}
-            <span className="text-blue-600">Hub</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
-            <button>Flights</button>
-            <button>Hotels</button>
-            <button>Manage Booking</button>
-            <button>Help</button>
-          </div>
-
+    <main className="home-shell">
+      <header className="site-header">
+        <div className="brand">
+          <span className="brand-mark">✈</span>
+          <span>
+            Trip Scanner <b>Hub</b>
+          </span>
         </div>
+
+        <nav>
+          <a href="#why">Why us</a>
+          <a href="#help">Help</a>
+        </nav>
       </header>
 
-      {/* HERO */}
-      <section className="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700">
-        <div className="max-w-7xl mx-auto px-5 pt-14 pb-28">
+      <section className="hero">
+        <div className="hero-copy">
+          <span className="eyebrow">
+            FLIGHTS • HOTELS • TRAVEL
+          </span>
 
-          <div className="text-center text-white mb-10">
-            <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-              Find your perfect flight
-            </h1>
+          <h1>
+            Find your flight.
+            <br />
+            <span>Travel smarter.</span>
+          </h1>
 
-            <p className="text-blue-100 text-lg">
-              Compare flights from airlines and travel providers in one place
-            </p>
+          <p>
+            Compare real-time flight offers and choose the journey
+            that works best for you.
+          </p>
+        </div>
+
+        <div className="search-panel">
+          <div className="trip-tabs">
+            <button
+              className={tripType === 'return' ? 'active' : ''}
+              onClick={() => setTripType('return')}
+            >
+              ↔ Return
+            </button>
+
+            <button
+              className={tripType === 'oneway' ? 'active' : ''}
+              onClick={() => setTripType('oneway')}
+            >
+              → One-way
+            </button>
           </div>
 
-          {/* SEARCH BOX */}
-          <div className="bg-white rounded-3xl shadow-2xl p-5 md:p-7 max-w-6xl mx-auto">
-
-            {/* TRIP TYPE */}
-            <div className="flex flex-wrap items-center gap-5 mb-6">
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="tripType"
-                  value="return"
-                  checked={tripType === 'return'}
-                  onChange={() => setTripType('return')}
-                  className="w-4 h-4"
-                />
-                <span className="font-semibold">Return</span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="tripType"
-                  value="oneway"
-                  checked={tripType === 'oneway'}
-                  onChange={() => setTripType('oneway')}
-                  className="w-4 h-4"
-                />
-                <span className="font-semibold">One way</span>
-              </label>
-
+          {error && (
+            <div className="error">
+              ⚠ {error}
             </div>
+          )}
 
-            <form onSubmit={handleSearch}>
+          <form onSubmit={search}>
+            <div className="search-grid">
+              <label className="field">
+                <small>FROM</small>
 
-              {/* FROM / TO */}
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-end">
+                <input
+                  value={origin}
+                  onChange={(e) =>
+                    setOrigin(e.target.value.toUpperCase())
+                  }
+                  placeholder="LHR"
+                  maxLength={3}
+                />
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    From
-                  </label>
+                <b>London Heathrow</b>
+              </label>
 
-                  <input
-                    type="text"
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    placeholder="London, LHR"
-                    className="w-full h-14 rounded-xl border border-slate-300 px-4 text-lg font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
+              <div className="swap">⇄</div>
 
-                <button
-                  type="button"
-                  onClick={swapLocations}
-                  className="hidden md:flex w-12 h-12 rounded-full border border-slate-300 items-center justify-center hover:bg-slate-50 text-xl"
-                  title="Swap airports"
-                >
-                  ⇄
-                </button>
+              <label className="field">
+                <small>TO</small>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    To
-                  </label>
+                <input
+                  value={destination}
+                  onChange={(e) =>
+                    setDestination(e.target.value.toUpperCase())
+                  }
+                  placeholder="AMD"
+                  maxLength={3}
+                />
 
-                  <input
-                    type="text"
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                    placeholder="Ahmedabad, AMD"
-                    className="w-full h-14 rounded-xl border border-slate-300 px-4 text-lg font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
+                <b>Ahmedabad</b>
+              </label>
 
-              </div>
+              <label className="field">
+                <small>DEPARTURE</small>
 
-              {/* DATES */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                <input
+                  type="date"
+                  min={today}
+                  value={departureDate}
+                  onChange={(e) =>
+                    setDepartureDate(e.target.value)
+                  }
+                />
+              </label>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    Departure
-                  </label>
-
-                  <input
-                    type="date"
-                    min={today}
-                    value={departureDate}
-                    onChange={(e) => {
-                      setDepartureDate(e.target.value);
-
-                      if (
-                        returnDate &&
-                        returnDate < e.target.value
-                      ) {
-                        setReturnDate('');
-                      }
-                    }}
-                    className="w-full h-14 rounded-xl border border-slate-300 px-4 font-semibold outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    Return
-                  </label>
+              {tripType === 'return' && (
+                <label className="field">
+                  <small>RETURN</small>
 
                   <input
                     type="date"
                     min={departureDate || today}
                     value={returnDate}
-                    disabled={tripType === 'oneway'}
-                    onChange={(e) => setReturnDate(e.target.value)}
-                    className={`w-full h-14 rounded-xl border px-4 font-semibold outline-none ${
-                      tripType === 'oneway'
-                        ? 'bg-slate-100 text-slate-400 border-slate-200'
-                        : 'border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100'
-                    }`}
-                  />
-                </div>
-
-              </div>
-
-              {/* PASSENGERS + CABIN */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-
-                {/* PASSENGERS */}
-                <div className="relative">
-
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    Passengers
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowPassengers(!showPassengers)
+                    onChange={(e) =>
+                      setReturnDate(e.target.value)
                     }
-                    className="w-full h-14 rounded-xl border border-slate-300 px-4 flex items-center justify-between text-left hover:border-blue-500"
-                  >
-                    <div>
-                      <div className="font-bold">
-                        {totalPassengers}{' '}
-                        {totalPassengers === 1
-                          ? 'traveller'
-                          : 'travellers'}
-                      </div>
+                  />
+                </label>
+              )}
 
-                      <div className="text-xs text-slate-500">
-                        {adults} adult
-                        {adults !== 1 ? 's' : ''}
-                        {children.length > 0 &&
-                          ` · ${children.length} child${
-                            children.length !== 1 ? 'ren' : ''
-                          }`}
-                        {infants.length > 0 &&
-                          ` · ${infants.length} infant${
-                            infants.length !== 1 ? 's' : ''
-                          }`}
-                      </div>
+              <div className="field passenger-field">
+                <small>PASSENGERS</small>
+
+                <button
+                  type="button"
+                  onClick={() => setOpen(!open)}
+                >
+                  {totalPassengers}{' '}
+                  passenger
+                  {totalPassengers !== 1 ? 's' : ''} · {cabin}
+                </button>
+
+                {open && (
+                  <div className="passenger-pop">
+
+                    {/* ADULTS */}
+                    <div className="pop-row">
+                      <span>
+                        <b>Adults</b>
+                        <small>18+ years</small>
+                      </span>
+
+                      <select
+                        value={adults}
+                        onChange={(e) =>
+                          setAdults(Number(e.target.value))
+                        }
+                      >
+                        {Array.from(
+                          { length: 9 },
+                          (_, i) => (
+                            <option key={i + 1}>
+                              {i + 1}
+                            </option>
+                          )
+                        )}
+                      </select>
                     </div>
 
-                    <span className="text-slate-500">⌄</span>
-                  </button>
+                    {/* CHILDREN */}
+                    <div className="pop-row">
+                      <span>
+                        <b>Children</b>
+                        <small>2–17 years</small>
+                      </span>
 
-                  {showPassengers && (
-                    <div className="absolute z-50 mt-2 left-0 right-0 bg-white border border-slate-200 rounded-2xl shadow-2xl p-5">
-
-                      {/* ADULT */}
-                      <div className="flex items-center justify-between py-3 border-b border-slate-100">
-
-                        <div>
-                          <div className="font-bold">Adults</div>
-                          <div className="text-xs text-slate-500">
-                            18+ years
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-
-                          <button
-                            type="button"
-                            disabled={adults <= 1}
-                            onClick={() =>
-                              setAdults(Math.max(1, adults - 1))
-                            }
-                            className="w-9 h-9 rounded-full border border-slate-300 disabled:opacity-40 text-lg"
-                          >
-                            −
-                          </button>
-
-                          <span className="w-6 text-center font-bold">
-                            {adults}
-                          </span>
-
-                          <button
-                            type="button"
-                            disabled={adults >= 9}
-                            onClick={() =>
-                              setAdults(Math.min(9, adults + 1))
-                            }
-                            className="w-9 h-9 rounded-full border border-slate-300 disabled:opacity-40 text-lg"
-                          >
-                            +
-                          </button>
-
-                        </div>
-
-                      </div>
-
-                      {/* CHILDREN */}
-                      <div className="py-4 border-b border-slate-100">
-
-                        <div className="flex items-center justify-between mb-3">
-
-                          <div>
-                            <div className="font-bold">Children</div>
-                            <div className="text-xs text-slate-500">
-                              Age 2–17 years
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={addChild}
-                            disabled={children.length >= 8}
-                            className="px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-bold disabled:opacity-40"
-                          >
-                            + Add child
-                          </button>
-
-                        </div>
-
-                        {children.map((age, index) => (
-                          <div
-                            key={`child-${index}`}
-                            className="flex items-center justify-between gap-3 mb-2"
-                          >
-
-                            <span className="text-sm font-medium">
-                              Child {index + 1}
-                            </span>
-
-                            <div className="flex items-center gap-2">
-
-                              <select
-                                value={age}
-                                onChange={(e) =>
-                                  updateChildAge(
-                                    index,
-                                    e.target.value
-                                  )
-                                }
-                                className="h-10 rounded-lg border border-slate-300 px-3 font-semibold"
-                              >
-                                {Array.from(
-                                  { length: 16 },
-                                  (_, i) => i + 2
-                                ).map((childAge) => (
-                                  <option
-                                    key={childAge}
-                                    value={childAge}
-                                  >
-                                    {childAge} years
-                                  </option>
-                                ))}
-                              </select>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeChild(index)
-                                }
-                                className="w-9 h-9 rounded-lg border border-red-200 text-red-600"
-                              >
-                                ×
-                              </button>
-
-                            </div>
-
-                          </div>
-                        ))}
-
-                        {children.length === 0 && (
-                          <div className="text-xs text-slate-400">
-                            No children added
-                          </div>
+                      <select
+                        value={childrenAges.length}
+                        onChange={(e) =>
+                          setChildCount(e.target.value)
+                        }
+                      >
+                        {Array.from(
+                          {
+                            length:
+                              Math.max(
+                                0,
+                                9 -
+                                  adults -
+                                  infantAges.length
+                              ) + 1,
+                          },
+                          (_, i) => (
+                            <option key={i} value={i}>
+                              {i}
+                            </option>
+                          )
                         )}
+                      </select>
+                    </div>
 
-                      </div>
+                    {/* CHILD AGE */}
+                    {childrenAges.map((age, i) => (
+                      <div
+                        className="pop-row"
+                        key={`child-${i}`}
+                      >
+                        <span>
+                          Child {i + 1} age
+                        </span>
 
-                      {/* INFANTS */}
-                      <div className="py-4">
-
-                        <div className="flex items-center justify-between mb-3">
-
-                          <div>
-                            <div className="font-bold">Infants</div>
-                            <div className="text-xs text-slate-500">
-                              Under 2 years
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={addInfant}
-                            disabled={
-                              infants.length >= adults ||
-                              infants.length >= 8
-                            }
-                            className="px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-bold disabled:opacity-40"
-                          >
-                            + Add infant
-                          </button>
-
-                        </div>
-
-                        {infants.map((age, index) => (
-                          <div
-                            key={`infant-${index}`}
-                            className="flex items-center justify-between gap-3 mb-2"
-                          >
-
-                            <span className="text-sm font-medium">
-                              Infant {index + 1}
-                            </span>
-
-                            <div className="flex items-center gap-2">
-
-                              <select
-                                value={age}
-                                onChange={(e) =>
-                                  updateInfantAge(
-                                    index,
-                                    e.target.value
-                                  )
-                                }
-                                className="h-10 rounded-lg border border-slate-300 px-3 font-semibold"
-                              >
-                                <option value="0">
-                                  0 years
-                                </option>
-                                <option value="1">
-                                  1 year
-                                </option>
-                              </select>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeInfant(index)
-                                }
-                                className="w-9 h-9 rounded-lg border border-red-200 text-red-600"
-                              >
-                                ×
-                              </button>
-
-                            </div>
-
-                          </div>
-                        ))}
-
-                        {infants.length === 0 && (
-                          <div className="text-xs text-slate-400">
-                            No infants added
-                          </div>
-                        )}
-
-                        {infants.length >= adults && (
-                          <div className="text-xs text-amber-600 mt-2">
-                            Maximum 1 infant per adult.
-                          </div>
-                        )}
-
-                      </div>
-
-                      <div className="flex justify-end pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowPassengers(false)}
-                          className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold"
+                        <select
+                          value={age}
+                          onChange={(e) =>
+                            setChildrenAges(
+                              childrenAges.map(
+                                (x, j) =>
+                                  j === i
+                                    ? Number(e.target.value)
+                                    : x
+                              )
+                            )
+                          }
                         >
-                          Done
-                        </button>
+                          {Array.from(
+                            { length: 16 },
+                            (_, a) => (
+                              <option
+                                key={a + 2}
+                                value={a + 2}
+                              >
+                                {a + 2} years
+                              </option>
+                            )
+                          )}
+                        </select>
                       </div>
+                    ))}
 
+                    {/* INFANTS */}
+                    <div className="pop-row">
+                      <span>
+                        <b>Infants</b>
+                        <small>Under 2 years</small>
+                      </span>
+
+                      <select
+                        value={infantAges.length}
+                        onChange={(e) =>
+                          setInfantCount(e.target.value)
+                        }
+                      >
+                        {Array.from(
+                          {
+                            length:
+                              Math.max(
+                                0,
+                                9 -
+                                  adults -
+                                  childrenAges.length
+                              ) + 1,
+                          },
+                          (_, i) => (
+                            <option key={i} value={i}>
+                              {i}
+                            </option>
+                          )
+                        )}
+                      </select>
                     </div>
-                  )}
 
-                </div>
+                    {/* INFANT AGE */}
+                    {infantAges.map((age, i) => (
+                      <div
+                        className="pop-row"
+                        key={`infant-${i}`}
+                      >
+                        <span>
+                          Infant {i + 1} age
+                        </span>
 
-                {/* CABIN */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                    Cabin class
-                  </label>
+                        <select
+                          value={age}
+                          onChange={(e) =>
+                            setInfantAges(
+                              infantAges.map(
+                                (x, j) =>
+                                  j === i
+                                    ? Number(e.target.value)
+                                    : x
+                              )
+                            )
+                          }
+                        >
+                          <option value={0}>
+                            Under 1 year
+                          </option>
 
-                  <select
-                    value={cabin}
-                    onChange={(e) => setCabin(e.target.value)}
-                    className="w-full h-14 rounded-xl border border-slate-300 px-4 font-semibold bg-white outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value="economy">
-                      Economy
-                    </option>
-                    <option value="premium_economy">
-                      Premium Economy
-                    </option>
-                    <option value="business">
-                      Business
-                    </option>
-                    <option value="first">
-                      First Class
-                    </option>
-                  </select>
-                </div>
+                          <option value={1}>
+                            1 year
+                          </option>
+                        </select>
+                      </div>
+                    ))}
 
+                    {/* CABIN */}
+                    <div className="pop-row">
+                      <span>
+                        <b>Cabin</b>
+                      </span>
+
+                      <select
+                        value={cabin}
+                        onChange={(e) =>
+                          setCabin(e.target.value)
+                        }
+                      >
+                        <option value="economy">
+                          Economy
+                        </option>
+
+                        <option value="premium_economy">
+                          Premium Economy
+                        </option>
+
+                        <option value="business">
+                          Business
+                        </option>
+
+                        <option value="first">
+                          First
+                        </option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="done"
+                      onClick={() => setOpen(false)}
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
               </div>
+            </div>
 
-              {/* SEARCH BUTTON */}
-              <button
-                type="submit"
-                className="w-full mt-6 h-14 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-lg shadow-lg transition"
-              >
-                Search flights
-              </button>
-
-            </form>
-
-          </div>
-
+            <button className="search-button">
+              Search flights <span>→</span>
+            </button>
+          </form>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="max-w-7xl mx-auto px-5 py-14">
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
-            <div className="text-3xl mb-4">✈️</div>
-            <h3 className="font-bold text-lg mb-2">
-              Compare flights
-            </h3>
-            <p className="text-slate-500 text-sm">
-              Compare multiple airlines and flight options in one place.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
-            <div className="text-3xl mb-4">💰</div>
-            <h3 className="font-bold text-lg mb-2">
-              Find better prices
-            </h3>
-            <p className="text-slate-500 text-sm">
-              See prices clearly per passenger before you book.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 border border-slate-200">
-            <div className="text-3xl mb-4">🔒</div>
-            <h3 className="font-bold text-lg mb-2">
-              Simple booking
-            </h3>
-            <p className="text-slate-500 text-sm">
-              Enter passenger details and continue through a simple booking flow.
-            </p>
-          </div>
-
+      <section id="why" className="benefits">
+        <div>
+          <strong>✓</strong>
+          <h3>Real flight offers</h3>
+          <p>
+            Flight details are taken from the live supplier
+            response.
+          </p>
         </div>
 
+        <div>
+          <strong>↕</strong>
+          <h3>Smart filters</h3>
+          <p>
+            Sort by price, duration, stops and departure time.
+          </p>
+        </div>
+
+        <div>
+          <strong>🔒</strong>
+          <h3>Secure checkout</h3>
+          <p>
+            Passenger details and payment are handled in separate
+            steps.
+          </p>
+        </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-slate-900 text-slate-400">
-        <div className="max-w-7xl mx-auto px-5 py-8 text-sm flex flex-col md:flex-row justify-between gap-4">
-          <div>
-            © {new Date().getFullYear()} Trip Scanner Hub
-          </div>
-
-          <div className="flex gap-5">
-            <span>Terms</span>
-            <span>Privacy</span>
-            <span>Help</span>
-          </div>
-        </div>
+      <footer id="help">
+        © 2026 Trip Scanner Hub · Compare flights with confidence.
       </footer>
-
     </main>
   );
 }
