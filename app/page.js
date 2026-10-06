@@ -1,3 +1,0 @@
-'use client';
-import {useEffect,useState} from 'react';
-export default function Confirmation(){const [order,setOrder]=useState(null);useEffect(()=>{try{setOrder(JSON.parse(sessionStorage.getItem('tripScannerOrder')||'null'))}catch{}},[]);return <main className="confirm-shell"><div className="confirm-card"><div className="success">✓</div><span className="eyebrow">TRIP SCANNER HUB</span><h1>Booking confirmed</h1><p>Your booking has been created successfully.</p><div className="pnr"><small>BOOKING REFERENCE</small><b>{order?.booking_reference||order?.id||'CONFIRMED'}</b></div><a href="/" className="primary link-btn">Search another flight</a></div></main>}
