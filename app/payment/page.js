@@ -47,22 +47,21 @@ function time(value) {
 ========================================= */
 
 function formatCardNumber(value) {
-  const digits = value
+  const digits = String(value || '')
     .replace(/\D/g, '')
     .slice(0, 16);
 
-  return digits.replace(
-    /(.{4})/g,
-    '$1 '
-  ).trim();
+  return digits
+    .replace(/(.{4})/g, '$1 ')
+    .trim();
 }
 
 /* =========================================
-   EXPIRY
+   EXPIRY MM/YY
 ========================================= */
 
 function formatExpiry(value) {
-  const digits = value
+  const digits = String(value || '')
     .replace(/\D/g, '')
     .slice(0, 4);
 
@@ -70,45 +69,41 @@ function formatExpiry(value) {
     return digits;
   }
 
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return (
+    digits.slice(0, 2) +
+    '/' +
+    digits.slice(2)
+  );
 }
 
 /* =========================================
-   CARD VALIDATION
+   VALIDATION
 ========================================= */
 
 function validCardNumber(value) {
-  const digits =
-    value.replace(/\D/g, '');
+  const digits = String(value || '')
+    .replace(/\D/g, '');
 
   return digits.length === 16;
 }
 
 function validExpiry(value) {
-  const match =
-    value.match(
-      /^(\d{2})\/(\d{2})$/
-    );
+  const match = String(value || '').match(
+    /^(\d{2})\/(\d{2})$/
+  );
 
   if (!match) {
     return false;
   }
 
-  const month =
-    Number(match[1]);
+  const month = Number(match[1]);
+  const year = Number(match[2]);
 
-  const year =
-    Number(match[2]);
-
-  if (
-    month < 1 ||
-    month > 12
-  ) {
+  if (month < 1 || month > 12) {
     return false;
   }
 
-  const now =
-    new Date();
+  const now = new Date();
 
   const currentMonth =
     now.getMonth() + 1;
@@ -116,9 +111,7 @@ function validExpiry(value) {
   const currentYear =
     now.getFullYear() % 100;
 
-  if (
-    year < currentYear
-  ) {
+  if (year < currentYear) {
     return false;
   }
 
@@ -134,13 +127,13 @@ function validExpiry(value) {
 
 function validCVV(value) {
   return /^\d{3,4}$/.test(
-    value
+    String(value || '')
   );
 }
 
 function validName(value) {
   return (
-    value.trim().length >= 2
+    String(value || '').trim().length >= 2
   );
 }
 
@@ -149,103 +142,107 @@ function validName(value) {
 ========================================= */
 
 function PaymentContent() {
-  const sp =
-    useSearchParams();
+  const sp = useSearchParams();
+  const router = useRouter();
 
-  const router =
-    useRouter();
-
-  const id =
+  const offerId =
     sp.get('offerId');
 
-  const [
-    offer,
-    setOffer,
-  ] = useState(null);
+  const [offer, setOffer] =
+    useState(null);
 
-  const [
-    method,
-    setMethod,
-  ] = useState('card');
+  const [method, setMethod] =
+    useState('card');
 
-  const [
-    busy,
-    setBusy,
-  ] = useState(false);
+  const [busy, setBusy] =
+    useState(false);
 
-  const [
-    error,
-    setError,
-  ] = useState('');
+  const [error, setError] =
+    useState('');
 
-  /* CARD */
+  /* CARD DATA */
 
-  const [
-    cardNumber,
-    setCardNumber,
-  ] = useState('');
+  const [cardNumber, setCardNumber] =
+    useState('');
 
-  const [
-    expiry,
-    setExpiry,
-  ] = useState('');
+  const [expiry, setExpiry] =
+    useState('');
 
-  const [
-    cvv,
-    setCvv,
-  ] = useState('');
+  const [cvv, setCvv] =
+    useState('');
 
-  const [
-    cardholderName,
-    setCardholderName,
-  ] = useState('');
+  const [cardholderName, setCardholderName] =
+    useState('');
 
-  const [
-    billingCountry,
-    setBillingCountry,
-  ] = useState('GB');
+  const [billingCountry, setBillingCountry] =
+    useState('GB');
 
   /* =========================================
      LOAD OFFER
   ========================================= */
 
   useEffect(() => {
-    if (!id) {
-      setError(
-        'Flight offer is missing.'
-      );
-      return;
-    }
+    let cancelled = false;
 
-    fetch(
-      `/api/payment?offerId=${encodeURIComponent(
-        id
-      )}`
-    )
-      .then((response) =>
-        response.json()
-      )
-      .then((data) => {
-        if (data.offer) {
-          setOffer(
-            data.offer
-          );
-        } else {
-          setError(
-            data.error ||
-              'Payment setup failed.'
+    async function loadOffer() {
+      if (!offerId) {
+        setError(
+          'Flight offer is missing.'
+        );
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/payment?offerId=${encodeURIComponent(
+            offerId
+          )}`,
+          {
+            method: 'GET',
+            cache: 'no-store',
+          }
+        );
+
+        const data =
+          await response.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+              'Unable to load payment details.'
           );
         }
-      })
-      .catch(() => {
-        setError(
-          'Unable to load payment details.'
-        );
-      });
-  }, [id]);
+
+        if (!data?.offer) {
+          throw new Error(
+            'Flight offer could not be loaded.'
+          );
+        }
+
+        setOffer(data.offer);
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err?.message ||
+              'Unable to load payment details.'
+          );
+        }
+      }
+    }
+
+    loadOffer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [offerId]);
 
   /* =========================================
-     CARD STATUS
+     VALIDATION STATUS
   ========================================= */
 
   const cardNumberEntered =
@@ -261,9 +258,7 @@ function PaymentContent() {
     cardholderName.length > 0;
 
   const cardNumberValid =
-    validCardNumber(
-      cardNumber
-    );
+    validCardNumber(cardNumber);
 
   const expiryValid =
     validExpiry(expiry);
@@ -272,23 +267,13 @@ function PaymentContent() {
     validCVV(cvv);
 
   const nameValid =
-    validName(
-      cardholderName
-    );
-
-  /* =========================================
-     CARD COMPLETE
-  ========================================= */
+    validName(cardholderName);
 
   const cardComplete =
     cardNumberValid &&
     expiryValid &&
     cvvValid &&
     nameValid;
-
-  /* =========================================
-     PAYMENT BUTTON
-  ========================================= */
 
   const canPay =
     Boolean(offer) &&
@@ -314,10 +299,9 @@ function PaymentContent() {
       return;
     }
 
-    /* CARD VALIDATION */
+    /* CARD CHECK */
 
     if (method === 'card') {
-
       if (!cardNumberValid) {
         setError(
           'Please enter a valid 16-digit card number.'
@@ -350,15 +334,12 @@ function PaymentContent() {
     setBusy(true);
 
     try {
-
       /*
-       * DEMO MODE
+       * TEMPORARY DEMO PAYMENT
        *
-       * We intentionally DO NOT call
-       * /api/orders here.
-       *
-       * Therefore Duffel will not receive
-       * incomplete demo payment data.
+       * No real payment.
+       * No Duffel order creation.
+       * No card details stored.
        */
 
       const demoOrder = {
@@ -366,7 +347,7 @@ function PaymentContent() {
           `DEMO-${Date.now()}`,
 
         offer_id:
-          id,
+          offerId,
 
         status:
           'demo_confirmed',
@@ -387,6 +368,14 @@ function PaymentContent() {
           new Date().toISOString(),
       };
 
+      /*
+       * Save only demo booking information.
+       *
+       * Card number,
+       * expiry and CVV
+       * are NOT saved.
+       */
+
       sessionStorage.setItem(
         'tripScannerOrder',
         JSON.stringify(
@@ -399,19 +388,12 @@ function PaymentContent() {
         'demo'
       );
 
-      /*
-       * Never store card number,
-       * expiry or CVV.
-       */
-
       router.push(
         `/confirmation?orderId=${encodeURIComponent(
           demoOrder.id
         )}`
       );
-
     } catch (err) {
-
       setError(
         err?.message ||
           'Demo payment failed.'
@@ -422,7 +404,7 @@ function PaymentContent() {
   }
 
   /* =========================================
-     SEGMENTS
+     FLIGHT SEGMENTS
   ========================================= */
 
   const segments =
@@ -453,9 +435,9 @@ function PaymentContent() {
 
       <div className="checkout-grid">
 
-        {/* =================================
-            PAYMENT
-        ================================= */}
+        {/* =====================================
+            PAYMENT SECTION
+        ====================================== */}
 
         <section>
 
@@ -489,9 +471,9 @@ function PaymentContent() {
             </h1>
 
             <p>
-              This is a safe demo checkout.
-              Real card payments will be
-              connected later.
+              Your payment page is ready.
+              This is currently a safe demo
+              checkout.
             </p>
 
             {/* PAYMENT METHODS */}
@@ -506,9 +488,7 @@ function PaymentContent() {
                     : ''
                 }
                 onClick={() => {
-                  setMethod(
-                    'apple'
-                  );
+                  setMethod('apple');
                   setError('');
                 }}
               >
@@ -526,9 +506,7 @@ function PaymentContent() {
                     : ''
                 }
                 onClick={() => {
-                  setMethod(
-                    'card'
-                  );
+                  setMethod('card');
                   setError('');
                 }}
               >
@@ -542,7 +520,7 @@ function PaymentContent() {
 
             {/* =================================
                 APPLE PAY
-            ================================= */}
+            ================================== */}
 
             {method === 'apple' ? (
 
@@ -566,7 +544,7 @@ function PaymentContent() {
 
               /* =================================
                  CARD
-              ================================= */
+              ================================== */
 
               <div className="card-demo">
 
@@ -577,6 +555,7 @@ function PaymentContent() {
                   Card number
 
                   <input
+                    type="text"
                     inputMode="numeric"
                     autoComplete="cc-number"
                     value={
@@ -584,6 +563,14 @@ function PaymentContent() {
                     }
                     placeholder="4242 4242 4242 4242"
                     maxLength={19}
+                    onChange={(event) => {
+                      setCardNumber(
+                        formatCardNumber(
+                          event.target.value
+                        )
+                      );
+                      setError('');
+                    }}
                     style={{
                       border:
                         cardNumberEntered
@@ -599,25 +586,18 @@ function PaymentContent() {
                             : '#fef2f2'
                           : undefined,
                     }}
-                    onChange={(e) =>
-                      setCardNumber(
-                        formatCardNumber(
-                          e.target.value
-                        )
-                      )
-                    }
                   />
 
                   {cardNumberEntered &&
                     !cardNumberValid && (
                       <small
                         style={{
-                          color:
-                            '#dc2626',
                           display:
                             'block',
                           marginTop:
                             '5px',
+                          color:
+                            '#dc2626',
                           fontWeight:
                             '600',
                         }}
@@ -629,12 +609,12 @@ function PaymentContent() {
                   {cardNumberValid && (
                     <small
                       style={{
-                        color:
-                          '#16a34a',
                         display:
                           'block',
                         marginTop:
                           '5px',
+                        color:
+                          '#16a34a',
                         fontWeight:
                           '600',
                       }}
@@ -656,6 +636,7 @@ function PaymentContent() {
                     Expiry
 
                     <input
+                      type="text"
                       inputMode="numeric"
                       autoComplete="cc-exp"
                       value={
@@ -663,6 +644,14 @@ function PaymentContent() {
                       }
                       placeholder="MM/YY"
                       maxLength={5}
+                      onChange={(event) => {
+                        setExpiry(
+                          formatExpiry(
+                            event.target.value
+                          )
+                        );
+                        setError('');
+                      }}
                       style={{
                         border:
                           expiryEntered
@@ -678,25 +667,18 @@ function PaymentContent() {
                               : '#fef2f2'
                             : undefined,
                       }}
-                      onChange={(e) =>
-                        setExpiry(
-                          formatExpiry(
-                            e.target.value
-                          )
-                        )
-                      }
                     />
 
                     {expiryEntered &&
                       !expiryValid && (
                         <small
                           style={{
-                            color:
-                              '#dc2626',
                             display:
                               'block',
                             marginTop:
                               '5px',
+                            color:
+                              '#dc2626',
                             fontWeight:
                               '600',
                           }}
@@ -708,12 +690,12 @@ function PaymentContent() {
                     {expiryValid && (
                       <small
                         style={{
-                          color:
-                            '#16a34a',
                           display:
                             'block',
                           marginTop:
                             '5px',
+                          color:
+                            '#16a34a',
                           fontWeight:
                             '600',
                         }}
@@ -737,6 +719,20 @@ function PaymentContent() {
                       value={cvv}
                       placeholder="•••"
                       maxLength={4}
+                      onChange={(event) => {
+                        setCvv(
+                          event.target.value
+                            .replace(
+                              /\D/g,
+                              ''
+                            )
+                            .slice(
+                              0,
+                              4
+                            )
+                        );
+                        setError('');
+                      }}
                       style={{
                         border:
                           cvvEntered
@@ -752,31 +748,18 @@ function PaymentContent() {
                               : '#fef2f2'
                             : undefined,
                       }}
-                      onChange={(e) =>
-                        setCvv(
-                          e.target.value
-                            .replace(
-                              /\D/g,
-                              ''
-                            )
-                            .slice(
-                              0,
-                              4
-                            )
-                        )
-                      }
                     />
 
                     {cvvEntered &&
                       !cvvValid && (
                         <small
                           style={{
-                            color:
-                              '#dc2626',
                             display:
                               'block',
                             marginTop:
                               '5px',
+                            color:
+                              '#dc2626',
                             fontWeight:
                               '600',
                           }}
@@ -788,12 +771,12 @@ function PaymentContent() {
                     {cvvValid && (
                       <small
                         style={{
-                          color:
-                            '#16a34a',
                           display:
                             'block',
                           marginTop:
                             '5px',
+                          color:
+                            '#16a34a',
                           fontWeight:
                             '600',
                         }}
@@ -813,11 +796,18 @@ function PaymentContent() {
                   Cardholder name
 
                   <input
+                    type="text"
                     autoComplete="cc-name"
                     value={
                       cardholderName
                     }
                     placeholder="Name on card"
+                    onChange={(event) => {
+                      setCardholderName(
+                        event.target.value
+                      );
+                      setError('');
+                    }}
                     style={{
                       border:
                         nameEntered
@@ -833,23 +823,18 @@ function PaymentContent() {
                             : '#fef2f2'
                           : undefined,
                     }}
-                    onChange={(e) =>
-                      setCardholderName(
-                        e.target.value
-                      )
-                    }
                   />
 
                   {nameEntered &&
                     !nameValid && (
                       <small
                         style={{
-                          color:
-                            '#dc2626',
                           display:
                             'block',
                           marginTop:
                             '5px',
+                          color:
+                            '#dc2626',
                           fontWeight:
                             '600',
                         }}
@@ -861,12 +846,12 @@ function PaymentContent() {
                   {nameValid && (
                     <small
                       style={{
-                        color:
-                          '#16a34a',
                         display:
                           'block',
                         marginTop:
                           '5px',
+                        color:
+                          '#16a34a',
                         fontWeight:
                           '600',
                       }}
@@ -887,9 +872,9 @@ function PaymentContent() {
                     value={
                       billingCountry
                     }
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setBillingCountry(
-                        e.target.value
+                        event.target.value
                       )
                     }
                   >
@@ -933,7 +918,7 @@ function PaymentContent() {
               </div>
             )}
 
-            {/* PAY BUTTON */}
+            {/* PAY */}
 
             <button
               type="submit"
@@ -942,6 +927,9 @@ function PaymentContent() {
               }
               className="primary wide"
               style={{
+                marginTop:
+                  '18px',
+
                 opacity:
                   canPay
                     ? 1
@@ -951,12 +939,8 @@ function PaymentContent() {
                   canPay
                     ? 'pointer'
                     : 'not-allowed',
-
-                marginTop:
-                  '18px',
               }}
             >
-
               {busy
                 ? 'Processing…'
                 : `Pay ${
@@ -967,7 +951,6 @@ function PaymentContent() {
                         )
                       : ''
                   } →`}
-
             </button>
 
             <div className="secure-note">
@@ -979,8 +962,8 @@ function PaymentContent() {
         </section>
 
         {/* =================================
-            SUMMARY
-        ================================= */}
+            BOOKING SUMMARY
+        ================================== */}
 
         <aside className="summary">
 
@@ -988,58 +971,53 @@ function PaymentContent() {
             Booking summary
           </h3>
 
-          {segs.map(
+          {segments.map(
             (
-              s,
-              i
+              segment,
+              index
             ) => (
               <div
                 className="summary-leg"
-                key={i}
+                key={index}
               >
 
                 <b>
-
                   {time(
-                    s.departing_at
+                    segment.departing_at
                   )}{' '}
 
                   {
-                    s.origin
+                    segment.origin
                       ?.iata_code
                   }
 
                   {' → '}
 
                   {time(
-                    s.arriving_at
+                    segment.arriving_at
                   )}{' '}
 
                   {
-                    s.destination
+                    segment.destination
                       ?.iata_code
                   }
-
                 </b>
 
                 <small>
-
                   {
-                    s
+                    segment
                       .marketing_carrier
                       ?.name ||
-                    offer?.owner
-                      ?.name
+                    offer?.owner?.name
                   }
 
                   {' · '}
 
                   {
-                    s
+                    segment
                       .marketing_carrier_flight_number ||
                     ''
                   }
-
                 </small>
 
               </div>
@@ -1053,13 +1031,11 @@ function PaymentContent() {
             </span>
 
             <strong>
-
               {offer &&
                 money(
                   offer.total_amount,
                   offer.total_currency
                 )}
-
             </strong>
 
           </div>
