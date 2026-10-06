@@ -25,20 +25,25 @@ function money(amount, currency) {
 function time(value) {
   if (!value) return '—';
 
-  return new Date(value).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return new Date(value).toLocaleTimeString(
+    'en-GB',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+    }
+  );
 }
 
-// ---------------------------------------------
-// DATE HELPERS
-// ---------------------------------------------
+/* =============================================
+   DATE HELPERS
+============================================= */
 
 function parseDate(value) {
   if (!value) return null;
 
-  const date = new Date(`${value}T00:00:00`);
+  const date = new Date(
+    `${value}T00:00:00`
+  );
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -48,7 +53,11 @@ function parseDate(value) {
 }
 
 function formatDateInput(date) {
-  const year = date.getFullYear();
+  if (!date) return '';
+
+  const year =
+    date.getFullYear();
+
   const month = String(
     date.getMonth() + 1
   ).padStart(2, '0');
@@ -60,7 +69,10 @@ function formatDateInput(date) {
   return `${year}-${month}-${day}`;
 }
 
-function addMonths(date, months) {
+function addMonths(
+  date,
+  months
+) {
   const result = new Date(date);
 
   result.setMonth(
@@ -70,7 +82,10 @@ function addMonths(date, months) {
   return result;
 }
 
-function subtractYears(date, years) {
+function subtractYears(
+  date,
+  years
+) {
   const result = new Date(date);
 
   result.setFullYear(
@@ -80,15 +95,17 @@ function subtractYears(date, years) {
   return result;
 }
 
-// ---------------------------------------------
-// AGE CALCULATION
-// ---------------------------------------------
+/* =============================================
+   AGE CALCULATION
+============================================= */
 
 function calculateAgeOnDate(
   dobString,
   travelDateString
 ) {
-  const dob = parseDate(dobString);
+  const dob =
+    parseDate(dobString);
+
   const travelDate =
     parseDate(travelDateString);
 
@@ -118,9 +135,60 @@ function calculateAgeOnDate(
   return age;
 }
 
-// ---------------------------------------------
-// DOB RANGE
-// ---------------------------------------------
+/* =============================================
+   INFANT AGE TEXT
+============================================= */
+
+function infantAgeText(age) {
+  const value = Number(age);
+
+  if (value === 0) {
+    return 'Under 1 year';
+  }
+
+  if (value === 1) {
+    return '1 year';
+  }
+
+  return `${value} years`;
+}
+
+/* =============================================
+   PASSENGER LABEL
+============================================= */
+
+function passengerLabel(
+  passenger
+) {
+  if (
+    passenger.type ===
+    'adult'
+  ) {
+    return 'Adult · 18+';
+  }
+
+  if (
+    passenger.type ===
+    'child'
+  ) {
+    return `Child · age ${passenger.age}`;
+  }
+
+  if (
+    passenger.type ===
+    'infant'
+  ) {
+    return `Infant · ${infantAgeText(
+      passenger.age
+    )}`;
+  }
+
+  return passenger.type;
+}
+
+/* =============================================
+   DOB RANGE
+============================================= */
 
 function getDobRange(
   passenger,
@@ -136,12 +204,12 @@ function getDobRange(
     };
   }
 
-  // -------------------------------------------
-  // ADULT
-  // Must be 18+
-  // -------------------------------------------
+  /* ADULT */
 
-  if (passenger.type === 'adult') {
+  if (
+    passenger.type ===
+    'adult'
+  ) {
     const latestDob =
       subtractYears(
         travelDate,
@@ -155,23 +223,28 @@ function getDobRange(
       );
 
     return {
-      min: formatDateInput(
-        earliestDob
-      ),
-      max: formatDateInput(
-        latestDob
-      ),
+      min:
+        formatDateInput(
+          earliestDob
+        ),
+
+      max:
+        formatDateInput(
+          latestDob
+        ),
     };
   }
 
-  // -------------------------------------------
-  // CHILD
-  // Exact selected age
-  // -------------------------------------------
+  /* CHILD */
 
-  if (passenger.type === 'child') {
+  if (
+    passenger.type ===
+    'child'
+  ) {
     const selectedAge =
-      Number(passenger.age);
+      Number(
+        passenger.age
+      );
 
     const latestDob =
       subtractYears(
@@ -179,37 +252,39 @@ function getDobRange(
         selectedAge
       );
 
-    const nextBirthday =
+    const earliestDob =
       subtractYears(
         travelDate,
         selectedAge + 1
       );
 
-    const earliestAllowedDob =
-      new Date(nextBirthday);
-
-    earliestAllowedDob.setDate(
-      earliestAllowedDob.getDate() + 1
+    earliestDob.setDate(
+      earliestDob.getDate() + 1
     );
 
     return {
-      min: formatDateInput(
-        earliestAllowedDob
-      ),
-      max: formatDateInput(
-        latestDob
-      ),
+      min:
+        formatDateInput(
+          earliestDob
+        ),
+
+      max:
+        formatDateInput(
+          latestDob
+        ),
     };
   }
 
-  // -------------------------------------------
-  // INFANT
-  // Exact selected age
-  // -------------------------------------------
+  /* INFANT */
 
-  if (passenger.type === 'infant') {
+  if (
+    passenger.type ===
+    'infant'
+  ) {
     const selectedAge =
-      Number(passenger.age);
+      Number(
+        passenger.age
+      );
 
     const latestDob =
       subtractYears(
@@ -217,26 +292,26 @@ function getDobRange(
         selectedAge
       );
 
-    const nextBirthday =
+    const earliestDob =
       subtractYears(
         travelDate,
         selectedAge + 1
       );
 
-    const earliestAllowedDob =
-      new Date(nextBirthday);
-
-    earliestAllowedDob.setDate(
-      earliestAllowedDob.getDate() + 1
+    earliestDob.setDate(
+      earliestDob.getDate() + 1
     );
 
     return {
-      min: formatDateInput(
-        earliestAllowedDob
-      ),
-      max: formatDateInput(
-        latestDob
-      ),
+      min:
+        formatDateInput(
+          earliestDob
+        ),
+
+      max:
+        formatDateInput(
+          latestDob
+        ),
     };
   }
 
@@ -246,83 +321,72 @@ function getDobRange(
   };
 }
 
-// ---------------------------------------------
-// DISPLAY AGE
-// ---------------------------------------------
-
-function passengerLabel(passenger) {
-  if (passenger.type === 'adult') {
-    return 'Adult';
-  }
-
-  if (passenger.type === 'child') {
-    return `Child · age ${passenger.age}`;
-  }
-
-  if (passenger.type === 'infant') {
-    return `Infant · age ${passenger.age}`;
-  }
-
-  return passenger.type;
-}
-
-// ---------------------------------------------
-// MAIN CHECKOUT
-// ---------------------------------------------
+/* =============================================
+   CHECKOUT CONTENT
+============================================= */
 
 function CheckoutContent() {
-  const router = useRouter();
-  const sp = useSearchParams();
+  const router =
+    useRouter();
+
+  const sp =
+    useSearchParams();
 
   const [offer, setOffer] =
     useState(null);
 
-  const [passengers, setPassengers] =
-    useState([]);
+  const [
+    passengers,
+    setPassengers,
+  ] = useState([]);
 
-  const [contact, setContact] =
-    useState({
-      email: '',
-      phone_number: '',
-    });
+  const [
+    contact,
+    setContact,
+  ] = useState({
+    email: '',
+    phone_number: '',
+  });
 
   const [error, setError] =
     useState('');
 
-  // -------------------------------------------
-  // CREATE PASSENGERS
-  // -------------------------------------------
+  /* ===========================================
+     CREATE PASSENGERS
+  =========================================== */
 
   useEffect(() => {
     const offerId =
       sp.get('offerId');
 
-    const adults = Math.max(
-      1,
-      Number(
-        sp.get('adults') || 1
-      )
-    );
+    const adults =
+      Math.max(
+        1,
+        Number(
+          sp.get('adults') || 1
+        )
+      );
 
-    // Child ages from home page
     const childAges =
-      sp.getAll('childAge')
+      sp
+        .getAll('childAge')
         .filter(
-          (age) => age !== ''
+          (age) =>
+            age !== ''
         );
 
-    // Infant ages from home page
     const infantAges =
-      sp.getAll('infantAge')
+      sp
+        .getAll('infantAge')
         .filter(
-          (age) => age !== ''
+          (age) =>
+            age !== ''
         );
 
-    const passengerList = [];
+    const passengerList =
+      [];
 
-    // -----------------------------------------
-    // ADULTS
-    // -----------------------------------------
+    /* ADULTS */
 
     for (
       let i = 0;
@@ -339,13 +403,12 @@ function CheckoutContent() {
         gender: 'm',
         nationality: 'GB',
         passport_number: '',
-        passport_expiry_date: '',
+        passport_expiry_date:
+          '',
       });
     }
 
-    // -----------------------------------------
-    // CHILDREN
-    // -----------------------------------------
+    /* CHILDREN */
 
     childAges.forEach(
       (age) => {
@@ -359,20 +422,23 @@ function CheckoutContent() {
           gender: 'm',
           nationality: 'GB',
           passport_number: '',
-          passport_expiry_date: '',
+          passport_expiry_date:
+            '',
         });
       }
     );
 
-    // -----------------------------------------
-    // INFANTS
-    // -----------------------------------------
+    /* INFANTS */
 
     infantAges.forEach(
       (age) => {
         passengerList.push({
           type: 'infant',
-          age: Number(age),
+
+          age:
+            Number(age) === 1
+              ? 1
+              : 0,
 
           given_name: '',
           family_name: '',
@@ -380,7 +446,8 @@ function CheckoutContent() {
           gender: 'm',
           nationality: 'GB',
           passport_number: '',
-          passport_expiry_date: '',
+          passport_expiry_date:
+            '',
         });
       }
     );
@@ -389,9 +456,7 @@ function CheckoutContent() {
       passengerList
     );
 
-    // -----------------------------------------
-    // LOAD OFFER
-    // -----------------------------------------
+    /* LOAD OFFER */
 
     if (offerId) {
       fetch(
@@ -404,7 +469,9 @@ function CheckoutContent() {
         )
         .then((data) => {
           if (data.offer) {
-            setOffer(data.offer);
+            setOffer(
+              data.offer
+            );
           } else {
             setError(
               data.error ||
@@ -420,9 +487,9 @@ function CheckoutContent() {
     }
   }, [sp]);
 
-  // -------------------------------------------
-  // UPDATE PASSENGER
-  // -------------------------------------------
+  /* ===========================================
+     UPDATE PASSENGER
+  =========================================== */
 
   function updatePassenger(
     index,
@@ -432,20 +499,24 @@ function CheckoutContent() {
     setPassengers(
       (current) =>
         current.map(
-          (passenger, i) =>
+          (
+            passenger,
+            i
+          ) =>
             i === index
               ? {
                   ...passenger,
-                  [field]: value,
+                  [field]:
+                    value,
                 }
               : passenger
         )
     );
   }
 
-  // -------------------------------------------
-  // CONTACT
-  // -------------------------------------------
+  /* ===========================================
+     UPDATE CONTACT
+  =========================================== */
 
   function updateContact(
     field,
@@ -454,14 +525,15 @@ function CheckoutContent() {
     setContact(
       (current) => ({
         ...current,
-        [field]: value,
+        [field]:
+          value,
       })
     );
   }
 
-  // -------------------------------------------
-  // SUBMIT / VALIDATION
-  // -------------------------------------------
+  /* ===========================================
+     SUBMIT
+  =========================================== */
 
   function submit(event) {
     event.preventDefault();
@@ -469,15 +541,15 @@ function CheckoutContent() {
     setError('');
 
     const departureDate =
-      sp.get('departureDate') ||
+      sp.get(
+        'departureDate'
+      ) ||
       offer?.slices?.[0]
         ?.segments?.[0]
         ?.departing_at
         ?.slice(0, 10);
 
-    // -----------------------------------------
-    // PASSENGER VALIDATION
-    // -----------------------------------------
+    /* PASSENGER VALIDATION */
 
     for (
       let i = 0;
@@ -490,7 +562,8 @@ function CheckoutContent() {
       const passengerNumber =
         i + 1;
 
-      // Required names
+      /* NAME */
+
       if (
         !passenger.given_name ||
         !passenger.family_name
@@ -498,20 +571,21 @@ function CheckoutContent() {
         setError(
           `Please complete Passenger ${passengerNumber} name.`
         );
+
         return;
       }
 
-      // DOB required
-      if (!passenger.born_on) {
+      /* DOB */
+
+      if (
+        !passenger.born_on
+      ) {
         setError(
           `Please enter Date of Birth for Passenger ${passengerNumber}.`
         );
+
         return;
       }
-
-      // ---------------------------------------
-      // AGE CHECK
-      // ---------------------------------------
 
       const calculatedAge =
         calculateAgeOnDate(
@@ -520,17 +594,17 @@ function CheckoutContent() {
         );
 
       if (
-        calculatedAge === null
+        calculatedAge ===
+        null
       ) {
         setError(
           `Invalid Date of Birth for Passenger ${passengerNumber}.`
         );
+
         return;
       }
 
-      // ---------------------------------------
-      // ADULT MUST BE 18+
-      // ---------------------------------------
+      /* ADULT 18+ */
 
       if (
         passenger.type ===
@@ -538,62 +612,82 @@ function CheckoutContent() {
         calculatedAge < 18
       ) {
         setError(
-          `Passenger ${passengerNumber} is selected as Adult. Date of Birth must make the passenger 18 years or older on the travel date.`
+          `Passenger ${passengerNumber} is Adult. Date of Birth must make the passenger 18 years or older on the travel date.`
         );
+
         return;
       }
 
-      // ---------------------------------------
-      // CHILD EXACT AGE
-      // ---------------------------------------
+      /* CHILD EXACT AGE */
 
       if (
         passenger.type ===
-          'child'
+        'child'
       ) {
         if (
           calculatedAge !==
-          Number(passenger.age)
+          Number(
+            passenger.age
+          )
         ) {
           setError(
-            `Passenger ${passengerNumber} is selected as Child age ${passenger.age}. Please enter a Date of Birth matching that age on the travel date.`
+            `Passenger ${passengerNumber} is Child age ${passenger.age}. Please enter a Date of Birth matching that age on the travel date.`
           );
+
           return;
         }
       }
 
-      // ---------------------------------------
-      // INFANT EXACT AGE
-      // ---------------------------------------
+      /* INFANT UNDER 2 */
 
       if (
         passenger.type ===
-          'infant'
+        'infant'
       ) {
+
         if (
-          calculatedAge !==
-          Number(passenger.age)
+          calculatedAge >= 2
         ) {
           setError(
-            `Passenger ${passengerNumber} is selected as Infant age ${passenger.age}. Please enter a Date of Birth matching that age on the travel date.`
+            `Passenger ${passengerNumber} must be under 2 years old on the travel date.`
           );
+
           return;
         }
 
         if (
-          calculatedAge < 0 ||
-          calculatedAge > 1
+          calculatedAge < 0
         ) {
           setError(
-            `Passenger ${passengerNumber} must be an infant aged 0–1 on the travel date.`
+            `Passenger ${passengerNumber} has an invalid Date of Birth.`
           );
+
+          return;
+        }
+
+        /*
+          If Home selected:
+          Under 1 = age 0
+          1 year = age 1
+        */
+
+        if (
+          calculatedAge !==
+          Number(
+            passenger.age
+          )
+        ) {
+          setError(
+            `Passenger ${passengerNumber} is Infant ${infantAgeText(
+              passenger.age
+            )}. Please enter a Date of Birth matching the selected age.`
+          );
+
           return;
         }
       }
 
-      // ---------------------------------------
-      // PASSPORT EXPIRY
-      // ---------------------------------------
+      /* PASSPORT EXPIRY */
 
       if (
         !passenger.passport_expiry_date
@@ -601,6 +695,7 @@ function CheckoutContent() {
         setError(
           `Please enter passport expiry date for Passenger ${passengerNumber}.`
         );
+
         return;
       }
 
@@ -621,11 +716,10 @@ function CheckoutContent() {
         setError(
           `Invalid passport expiry date for Passenger ${passengerNumber}.`
         );
+
         return;
       }
 
-      // Passport must be valid for
-      // at least 6 months from departure
       const minimumExpiry =
         addMonths(
           travelDate,
@@ -639,11 +733,10 @@ function CheckoutContent() {
         setError(
           `Passport for Passenger ${passengerNumber} must be valid for at least 6 months after the departure date.`
         );
+
         return;
       }
 
-      // Passport expiry cannot be
-      // before DOB
       if (
         expiryDate <=
         parseDate(
@@ -653,31 +746,32 @@ function CheckoutContent() {
         setError(
           `Passport expiry date for Passenger ${passengerNumber} must be after the Date of Birth.`
         );
+
         return;
       }
     }
 
-    // -----------------------------------------
-    // CONTACT VALIDATION
-    // -----------------------------------------
+    /* CONTACT */
 
     if (!contact.email) {
       setError(
         'Please enter the contact email address.'
       );
+
       return;
     }
 
-    if (!contact.phone_number) {
+    if (
+      !contact.phone_number
+    ) {
       setError(
         'Please enter the contact phone number.'
       );
+
       return;
     }
 
-    // -----------------------------------------
-    // SAVE DATA
-    // -----------------------------------------
+    /* SAVE */
 
     sessionStorage.setItem(
       'tripScannerPassengers',
@@ -695,23 +789,25 @@ function CheckoutContent() {
 
     sessionStorage.setItem(
       'tripScannerOfferId',
-      sp.get('offerId') || ''
+      sp.get(
+        'offerId'
+      ) || ''
     );
 
-    // -----------------------------------------
-    // PAYMENT
-    // -----------------------------------------
+    /* PAYMENT */
 
     router.push(
       `/payment?offerId=${encodeURIComponent(
-        sp.get('offerId') || ''
+        sp.get(
+          'offerId'
+        ) || ''
       )}`
     );
   }
 
-  // -------------------------------------------
-  // FLIGHT SEGMENTS
-  // -------------------------------------------
+  /* ===========================================
+     FLIGHT SEGMENTS
+  =========================================== */
 
   const segments =
     offer?.slices?.flatMap(
@@ -719,18 +815,19 @@ function CheckoutContent() {
         slice.segments || []
     ) || [];
 
-  // -------------------------------------------
-  // DEPARTURE DATE
-  // -------------------------------------------
-
   const departureDate =
-    sp.get('departureDate') ||
+    sp.get(
+      'departureDate'
+    ) ||
     offer?.slices?.[0]
       ?.segments?.[0]
       ?.departing_at
       ?.slice(0, 10);
 
-  // Passport minimum expiry date
+  /* ===========================================
+     PASSPORT MINIMUM
+  =========================================== */
+
   const passportMinDate =
     departureDate
       ? formatDateInput(
@@ -743,9 +840,9 @@ function CheckoutContent() {
         )
       : '';
 
-  // -------------------------------------------
-  // PAGE
-  // -------------------------------------------
+  /* ===========================================
+     PAGE
+  =========================================== */
 
   return (
     <main className="checkout-shell">
@@ -768,6 +865,7 @@ function CheckoutContent() {
         <section>
 
           <div className="stepbar">
+
             <b>
               1 Passenger
             </b>
@@ -779,11 +877,14 @@ function CheckoutContent() {
             <span>
               3 Confirmation
             </span>
+
           </div>
 
           <form
             className="passenger-card"
-            onSubmit={submit}
+            onSubmit={
+              submit
+            }
           >
 
             <h1>
@@ -791,9 +892,9 @@ function CheckoutContent() {
             </h1>
 
             <p>
-              Enter passenger details exactly
-              as shown on the passport or
-              travel document.
+              Enter passenger details
+              exactly as shown on the
+              passport or travel document.
             </p>
 
             {error && (
@@ -802,9 +903,7 @@ function CheckoutContent() {
               </div>
             )}
 
-            {/* =================================
-                PASSENGERS
-            ================================== */}
+            {/* PASSENGERS */}
 
             {passengers.map(
               (
@@ -825,8 +924,10 @@ function CheckoutContent() {
                     style={{
                       marginBottom:
                         '28px',
+
                       paddingBottom:
                         '24px',
+
                       borderBottom:
                         '1px solid #e5e7eb',
                     }}
@@ -841,28 +942,34 @@ function CheckoutContent() {
                         style={{
                           fontSize:
                             '14px',
+
                           fontWeight:
-                            '500',
+                            '600',
+
                           color:
-                            '#64748b',
+                            passenger.type ===
+                            'infant'
+                              ? '#2563eb'
+                              : '#64748b',
                         }}
                       >
+
                         (
                         {passengerLabel(
                           passenger
                         )}
                         )
+
                       </span>
 
                     </h2>
 
-                    <div
-                      className="form-grid"
-                    >
+                    <div className="form-grid">
 
                       {/* FIRST NAME */}
 
                       <label>
+
                         First name *
 
                         <input
@@ -881,11 +988,13 @@ function CheckoutContent() {
                           }
                           required
                         />
+
                       </label>
 
                       {/* LAST NAME */}
 
                       <label>
+
                         Last name *
 
                         <input
@@ -904,11 +1013,13 @@ function CheckoutContent() {
                           }
                           required
                         />
+
                       </label>
 
                       {/* DOB */}
 
                       <label>
+
                         Date of birth *
 
                         <input
@@ -940,12 +1051,15 @@ function CheckoutContent() {
                           style={{
                             display:
                               'block',
+
                             marginTop:
                               '6px',
+
                             color:
                               '#64748b',
                           }}
                         >
+
                           {passenger.type ===
                             'adult' &&
                             'Adult must be 18+ on the departure date.'}
@@ -956,13 +1070,16 @@ function CheckoutContent() {
 
                           {passenger.type ===
                             'infant' &&
-                            `Infant must be exactly age ${passenger.age} on the departure date.`}
+                            `Infant must be under 2 years on the departure date.`}
+
                         </small>
+
                       </label>
 
                       {/* GENDER */}
 
                       <label>
+
                         Gender
 
                         <select
@@ -979,6 +1096,7 @@ function CheckoutContent() {
                             )
                           }
                         >
+
                           <option value="m">
                             Male
                           </option>
@@ -986,12 +1104,15 @@ function CheckoutContent() {
                           <option value="f">
                             Female
                           </option>
+
                         </select>
+
                       </label>
 
                       {/* NATIONALITY */}
 
                       <label>
+
                         Nationality
 
                         <input
@@ -1009,11 +1130,13 @@ function CheckoutContent() {
                             )
                           }
                         />
+
                       </label>
 
                       {/* PASSPORT */}
 
                       <label>
+
                         Passport number
 
                         <input
@@ -1031,11 +1154,13 @@ function CheckoutContent() {
                             )
                           }
                         />
+
                       </label>
 
                       {/* PASSPORT EXPIRY */}
 
                       <label>
+
                         Passport expiry *
 
                         <input
@@ -1063,14 +1188,17 @@ function CheckoutContent() {
                           style={{
                             display:
                               'block',
+
                             marginTop:
                               '6px',
+
                             color:
                               '#64748b',
                           }}
                         >
                           Must be valid for at least 6 months after departure.
                         </small>
+
                       </label>
 
                     </div>
@@ -1080,22 +1208,23 @@ function CheckoutContent() {
               }
             )}
 
-            {/* =================================
-                CONTACT INFORMATION
-                ONLY ONCE
-            ================================== */}
+            {/* CONTACT */}
 
             <div
               className="contact-section"
               style={{
                 marginTop:
                   '32px',
+
                 padding:
                   '24px',
+
                 borderRadius:
                   '16px',
+
                 background:
                   '#f8fafc',
+
                 border:
                   '1px solid #e2e8f0',
               }}
@@ -1111,11 +1240,10 @@ function CheckoutContent() {
                 flight updates to these details.
               </p>
 
-              <div
-                className="form-grid"
-              >
+              <div className="form-grid">
 
                 <label>
+
                   Email address *
 
                   <input
@@ -1134,9 +1262,11 @@ function CheckoutContent() {
                     }
                     required
                   />
+
                 </label>
 
                 <label>
+
                   Phone number *
 
                   <input
@@ -1155,13 +1285,12 @@ function CheckoutContent() {
                     }
                     required
                   />
+
                 </label>
 
               </div>
 
             </div>
-
-            {/* CONTINUE */}
 
             <button
               type="submit"
@@ -1178,9 +1307,7 @@ function CheckoutContent() {
 
         </section>
 
-        {/* =================================
-            BOOKING SUMMARY
-        ================================== */}
+        {/* BOOKING SUMMARY */}
 
         <aside className="summary">
 
@@ -1199,13 +1326,13 @@ function CheckoutContent() {
               >
 
                 <b>
+
                   {time(
                     segment.departing_at
                   )}{' '}
 
                   {
-                    segment
-                      .origin
+                    segment.origin
                       ?.iata_code
                   }
 
@@ -1216,13 +1343,14 @@ function CheckoutContent() {
                   )}{' '}
 
                   {
-                    segment
-                      .destination
+                    segment.destination
                       ?.iata_code
                   }
+
                 </b>
 
                 <small>
+
                   {
                     segment
                       .marketing_carrier
@@ -1235,6 +1363,7 @@ function CheckoutContent() {
                     segment
                       .marketing_carrier_flight_number
                   }
+
                 </small>
 
               </div>
@@ -1248,11 +1377,13 @@ function CheckoutContent() {
             </span>
 
             <strong>
+
               {offer &&
                 money(
                   offer.total_amount,
                   offer.total_currency
                 )}
+
             </strong>
 
           </div>
@@ -1265,9 +1396,9 @@ function CheckoutContent() {
   );
 }
 
-// ---------------------------------------------
-// EXPORT
-// ---------------------------------------------
+/* =============================================
+   EXPORT
+============================================= */
 
 export default function Checkout() {
   return (
