@@ -3,6 +3,7 @@
 import {
   Suspense,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -11,21 +12,42 @@ import {
   useSearchParams,
 } from 'next/navigation';
 
-function money(amount, currency) {
+/* =============================================
+   MONEY
+============================================= */
+
+function money(
+  amount,
+  currency
+) {
   try {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: currency || 'GBP',
-    }).format(Number(amount));
+    return new Intl.NumberFormat(
+      'en-GB',
+      {
+        style: 'currency',
+        currency:
+          currency || 'GBP',
+      }
+    ).format(
+      Number(amount)
+    );
   } catch {
-    return `${currency || 'GBP'} ${amount}`;
+    return `${
+      currency || 'GBP'
+    } ${amount}`;
   }
 }
+
+/* =============================================
+   TIME
+============================================= */
 
 function time(value) {
   if (!value) return '—';
 
-  return new Date(value).toLocaleTimeString(
+  return new Date(
+    value
+  ).toLocaleTimeString(
     'en-GB',
     {
       hour: '2-digit',
@@ -45,14 +67,20 @@ function parseDate(value) {
     `${value}T00:00:00`
   );
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return null;
   }
 
   return date;
 }
 
-function formatDateInput(date) {
+function formatDateInput(
+  date
+) {
   if (!date) return '';
 
   const year =
@@ -73,10 +101,12 @@ function addMonths(
   date,
   months
 ) {
-  const result = new Date(date);
+  const result =
+    new Date(date);
 
   result.setMonth(
-    result.getMonth() + months
+    result.getMonth() +
+      months
   );
 
   return result;
@@ -86,17 +116,19 @@ function subtractYears(
   date,
   years
 ) {
-  const result = new Date(date);
+  const result =
+    new Date(date);
 
   result.setFullYear(
-    result.getFullYear() - years
+    result.getFullYear() -
+      years
   );
 
   return result;
 }
 
 /* =============================================
-   AGE CALCULATION
+   AGE
 ============================================= */
 
 function calculateAgeOnDate(
@@ -107,7 +139,9 @@ function calculateAgeOnDate(
     parseDate(dobString);
 
   const travelDate =
-    parseDate(travelDateString);
+    parseDate(
+      travelDateString
+    );
 
   if (!dob || !travelDate) {
     return null;
@@ -136,25 +170,17 @@ function calculateAgeOnDate(
 }
 
 /* =============================================
-   INFANT AGE TEXT
+   INFANT AGE
 ============================================= */
 
 function infantAgeText(age) {
-  const value = Number(age);
-
-  if (value === 0) {
-    return 'Under 1 year';
-  }
-
-  if (value === 1) {
-    return '1 year';
-  }
-
-  return `${value} years`;
+  return Number(age) === 0
+    ? 'Under 1 year'
+    : '1 year';
 }
 
 /* =============================================
-   PASSENGER LABEL
+   LABEL
 ============================================= */
 
 function passengerLabel(
@@ -195,7 +221,9 @@ function getDobRange(
   departureDate
 ) {
   const travelDate =
-    parseDate(departureDate);
+    parseDate(
+      departureDate
+    );
 
   if (!travelDate) {
     return {
@@ -210,27 +238,21 @@ function getDobRange(
     passenger.type ===
     'adult'
   ) {
-    const latestDob =
-      subtractYears(
-        travelDate,
-        18
-      );
-
-    const earliestDob =
-      subtractYears(
-        travelDate,
-        100
-      );
-
     return {
       min:
         formatDateInput(
-          earliestDob
+          subtractYears(
+            travelDate,
+            100
+          )
         ),
 
       max:
         formatDateInput(
-          latestDob
+          subtractYears(
+            travelDate,
+            18
+          )
         ),
     };
   }
@@ -241,36 +263,36 @@ function getDobRange(
     passenger.type ===
     'child'
   ) {
-    const selectedAge =
+    const age =
       Number(
         passenger.age
       );
 
-    const latestDob =
+    const max =
       subtractYears(
         travelDate,
-        selectedAge
+        age
       );
 
-    const earliestDob =
+    const min =
       subtractYears(
         travelDate,
-        selectedAge + 1
+        age + 1
       );
 
-    earliestDob.setDate(
-      earliestDob.getDate() + 1
+    min.setDate(
+      min.getDate() + 1
     );
 
     return {
       min:
         formatDateInput(
-          earliestDob
+          min
         ),
 
       max:
         formatDateInput(
-          latestDob
+          max
         ),
     };
   }
@@ -281,36 +303,36 @@ function getDobRange(
     passenger.type ===
     'infant'
   ) {
-    const selectedAge =
+    const age =
       Number(
         passenger.age
       );
 
-    const latestDob =
+    const max =
       subtractYears(
         travelDate,
-        selectedAge
+        age
       );
 
-    const earliestDob =
+    const min =
       subtractYears(
         travelDate,
-        selectedAge + 1
+        age + 1
       );
 
-    earliestDob.setDate(
-      earliestDob.getDate() + 1
+    min.setDate(
+      min.getDate() + 1
     );
 
     return {
       min:
         formatDateInput(
-          earliestDob
+          min
         ),
 
       max:
         formatDateInput(
-          latestDob
+          max
         ),
     };
   }
@@ -319,6 +341,39 @@ function getDobRange(
     min: '',
     max: '',
   };
+}
+
+/* =============================================
+   FIELD STATUS
+============================================= */
+
+function fieldStyle(
+  valid,
+  invalid
+) {
+  if (valid) {
+    return {
+      border:
+        '2px solid #16a34a',
+      background:
+        '#f0fdf4',
+      outline:
+        'none',
+    };
+  }
+
+  if (invalid) {
+    return {
+      border:
+        '2px solid #dc2626',
+      background:
+        '#fef2f2',
+      outline:
+        'none',
+    };
+  }
+
+  return {};
 }
 
 /* =============================================
@@ -332,8 +387,10 @@ function CheckoutContent() {
   const sp =
     useSearchParams();
 
-  const [offer, setOffer] =
-    useState(null);
+  const [
+    offer,
+    setOffer,
+  ] = useState(null);
 
   const [
     passengers,
@@ -352,41 +409,49 @@ function CheckoutContent() {
     useState('');
 
   /* ===========================================
+     URL PASSENGERS
+  =========================================== */
+
+  const adults =
+    Math.max(
+      1,
+      Number(
+        sp.get(
+          'adults'
+        ) || 1
+      )
+    );
+
+  const childAges =
+    sp
+      .getAll('childAge')
+      .filter(
+        (age) =>
+          age !== ''
+      );
+
+  const infantAges =
+    sp
+      .getAll('infantAge')
+      .filter(
+        (age) =>
+          age !== ''
+      );
+
+  /* ===========================================
      CREATE PASSENGERS
   =========================================== */
 
   useEffect(() => {
     const offerId =
-      sp.get('offerId');
-
-    const adults =
-      Math.max(
-        1,
-        Number(
-          sp.get('adults') || 1
-        )
+      sp.get(
+        'offerId'
       );
-
-    const childAges =
-      sp
-        .getAll('childAge')
-        .filter(
-          (age) =>
-            age !== ''
-        );
-
-    const infantAges =
-      sp
-        .getAll('infantAge')
-        .filter(
-          (age) =>
-            age !== ''
-        );
 
     const passengerList =
       [];
 
-    /* ADULTS */
+    /* ADULT */
 
     for (
       let i = 0;
@@ -408,7 +473,7 @@ function CheckoutContent() {
       });
     }
 
-    /* CHILDREN */
+    /* CHILD */
 
     childAges.forEach(
       (age) => {
@@ -428,13 +493,12 @@ function CheckoutContent() {
       }
     );
 
-    /* INFANTS */
+    /* INFANT */
 
     infantAges.forEach(
       (age) => {
         passengerList.push({
           type: 'infant',
-
           age:
             Number(age) === 1
               ? 1
@@ -464,11 +528,14 @@ function CheckoutContent() {
           offerId
         )}`
       )
-        .then((response) =>
-          response.json()
+        .then(
+          (response) =>
+            response.json()
         )
         .then((data) => {
-          if (data.offer) {
+          if (
+            data.offer
+          ) {
             setOffer(
               data.offer
             );
@@ -485,335 +552,16 @@ function CheckoutContent() {
           );
         });
     }
-  }, [sp]);
+  }, [
+    sp,
+    adults,
+    childAges.join(','),
+    infantAges.join(','),
+  ]);
 
   /* ===========================================
-     UPDATE PASSENGER
+     DEPARTURE
   =========================================== */
-
-  function updatePassenger(
-    index,
-    field,
-    value
-  ) {
-    setPassengers(
-      (current) =>
-        current.map(
-          (
-            passenger,
-            i
-          ) =>
-            i === index
-              ? {
-                  ...passenger,
-                  [field]:
-                    value,
-                }
-              : passenger
-        )
-    );
-  }
-
-  /* ===========================================
-     UPDATE CONTACT
-  =========================================== */
-
-  function updateContact(
-    field,
-    value
-  ) {
-    setContact(
-      (current) => ({
-        ...current,
-        [field]:
-          value,
-      })
-    );
-  }
-
-  /* ===========================================
-     SUBMIT
-  =========================================== */
-
-  function submit(event) {
-    event.preventDefault();
-
-    setError('');
-
-    const departureDate =
-      sp.get(
-        'departureDate'
-      ) ||
-      offer?.slices?.[0]
-        ?.segments?.[0]
-        ?.departing_at
-        ?.slice(0, 10);
-
-    /* PASSENGER VALIDATION */
-
-    for (
-      let i = 0;
-      i < passengers.length;
-      i++
-    ) {
-      const passenger =
-        passengers[i];
-
-      const passengerNumber =
-        i + 1;
-
-      /* NAME */
-
-      if (
-        !passenger.given_name ||
-        !passenger.family_name
-      ) {
-        setError(
-          `Please complete Passenger ${passengerNumber} name.`
-        );
-
-        return;
-      }
-
-      /* DOB */
-
-      if (
-        !passenger.born_on
-      ) {
-        setError(
-          `Please enter Date of Birth for Passenger ${passengerNumber}.`
-        );
-
-        return;
-      }
-
-      const calculatedAge =
-        calculateAgeOnDate(
-          passenger.born_on,
-          departureDate
-        );
-
-      if (
-        calculatedAge ===
-        null
-      ) {
-        setError(
-          `Invalid Date of Birth for Passenger ${passengerNumber}.`
-        );
-
-        return;
-      }
-
-      /* ADULT 18+ */
-
-      if (
-        passenger.type ===
-          'adult' &&
-        calculatedAge < 18
-      ) {
-        setError(
-          `Passenger ${passengerNumber} is Adult. Date of Birth must make the passenger 18 years or older on the travel date.`
-        );
-
-        return;
-      }
-
-      /* CHILD EXACT AGE */
-
-      if (
-        passenger.type ===
-        'child'
-      ) {
-        if (
-          calculatedAge !==
-          Number(
-            passenger.age
-          )
-        ) {
-          setError(
-            `Passenger ${passengerNumber} is Child age ${passenger.age}. Please enter a Date of Birth matching that age on the travel date.`
-          );
-
-          return;
-        }
-      }
-
-      /* INFANT UNDER 2 */
-
-      if (
-        passenger.type ===
-        'infant'
-      ) {
-
-        if (
-          calculatedAge >= 2
-        ) {
-          setError(
-            `Passenger ${passengerNumber} must be under 2 years old on the travel date.`
-          );
-
-          return;
-        }
-
-        if (
-          calculatedAge < 0
-        ) {
-          setError(
-            `Passenger ${passengerNumber} has an invalid Date of Birth.`
-          );
-
-          return;
-        }
-
-        /*
-          If Home selected:
-          Under 1 = age 0
-          1 year = age 1
-        */
-
-        if (
-          calculatedAge !==
-          Number(
-            passenger.age
-          )
-        ) {
-          setError(
-            `Passenger ${passengerNumber} is Infant ${infantAgeText(
-              passenger.age
-            )}. Please enter a Date of Birth matching the selected age.`
-          );
-
-          return;
-        }
-      }
-
-      /* PASSPORT EXPIRY */
-
-      if (
-        !passenger.passport_expiry_date
-      ) {
-        setError(
-          `Please enter passport expiry date for Passenger ${passengerNumber}.`
-        );
-
-        return;
-      }
-
-      const expiryDate =
-        parseDate(
-          passenger.passport_expiry_date
-        );
-
-      const travelDate =
-        parseDate(
-          departureDate
-        );
-
-      if (
-        !expiryDate ||
-        !travelDate
-      ) {
-        setError(
-          `Invalid passport expiry date for Passenger ${passengerNumber}.`
-        );
-
-        return;
-      }
-
-      const minimumExpiry =
-        addMonths(
-          travelDate,
-          6
-        );
-
-      if (
-        expiryDate <
-        minimumExpiry
-      ) {
-        setError(
-          `Passport for Passenger ${passengerNumber} must be valid for at least 6 months after the departure date.`
-        );
-
-        return;
-      }
-
-      if (
-        expiryDate <=
-        parseDate(
-          passenger.born_on
-        )
-      ) {
-        setError(
-          `Passport expiry date for Passenger ${passengerNumber} must be after the Date of Birth.`
-        );
-
-        return;
-      }
-    }
-
-    /* CONTACT */
-
-    if (!contact.email) {
-      setError(
-        'Please enter the contact email address.'
-      );
-
-      return;
-    }
-
-    if (
-      !contact.phone_number
-    ) {
-      setError(
-        'Please enter the contact phone number.'
-      );
-
-      return;
-    }
-
-    /* SAVE */
-
-    sessionStorage.setItem(
-      'tripScannerPassengers',
-      JSON.stringify(
-        passengers
-      )
-    );
-
-    sessionStorage.setItem(
-      'tripScannerContact',
-      JSON.stringify(
-        contact
-      )
-    );
-
-    sessionStorage.setItem(
-      'tripScannerOfferId',
-      sp.get(
-        'offerId'
-      ) || ''
-    );
-
-    /* PAYMENT */
-
-    router.push(
-      `/payment?offerId=${encodeURIComponent(
-        sp.get(
-          'offerId'
-        ) || ''
-      )}`
-    );
-  }
-
-  /* ===========================================
-     FLIGHT SEGMENTS
-  =========================================== */
-
-  const segments =
-    offer?.slices?.flatMap(
-      (slice) =>
-        slice.segments || []
-    ) || [];
 
   const departureDate =
     sp.get(
@@ -839,6 +587,467 @@ function CheckoutContent() {
           )
         )
       : '';
+
+  /* ===========================================
+     UPDATE
+  =========================================== */
+
+  function updatePassenger(
+    index,
+    field,
+    value
+  ) {
+    setPassengers(
+      (current) =>
+        current.map(
+          (
+            passenger,
+            i
+          ) =>
+            i === index
+              ? {
+                  ...passenger,
+                  [field]:
+                    value,
+                }
+              : passenger
+        )
+    );
+
+    setError('');
+  }
+
+  function updateContact(
+    field,
+    value
+  ) {
+    setContact(
+      (current) => ({
+        ...current,
+        [field]:
+          value,
+      })
+    );
+
+    setError('');
+  }
+
+  /* ===========================================
+     VALIDATE PASSENGER
+  =========================================== */
+
+  function validatePassenger(
+    passenger
+  ) {
+    if (
+      !passenger.born_on
+    ) {
+      return {
+        valid: false,
+        message:
+          'Date of Birth is required.',
+      };
+    }
+
+    const dob =
+      parseDate(
+        passenger.born_on
+      );
+
+    const travel =
+      parseDate(
+        departureDate
+      );
+
+    if (!dob || !travel) {
+      return {
+        valid: false,
+        message:
+          'Please enter a valid Date of Birth.',
+      };
+    }
+
+    const age =
+      calculateAgeOnDate(
+        passenger.born_on,
+        departureDate
+      );
+
+    if (
+      passenger.type ===
+      'adult'
+    ) {
+      if (age < 18) {
+        return {
+          valid: false,
+          message:
+            'Adult must be 18 years or older on the departure date.',
+        };
+      }
+    }
+
+    if (
+      passenger.type ===
+      'child'
+    ) {
+      if (
+        age !==
+        Number(
+          passenger.age
+        )
+      ) {
+        return {
+          valid: false,
+          message:
+            `This passenger is selected as Child age ${passenger.age}. Please enter the correct Date of Birth.`,
+        };
+      }
+    }
+
+    if (
+      passenger.type ===
+      'infant'
+    ) {
+      if (
+        age < 0 ||
+        age >= 2
+      ) {
+        return {
+          valid: false,
+          message:
+            'Infant must be under 2 years old on the departure date.',
+        };
+      }
+
+      if (
+        age !==
+        Number(
+          passenger.age
+        )
+      ) {
+        return {
+          valid: false,
+          message:
+            `This passenger is selected as Infant ${infantAgeText(
+              passenger.age
+            )}. Please enter the correct Date of Birth.`,
+        };
+      }
+    }
+
+    if (
+      !passenger.passport_expiry_date
+    ) {
+      return {
+        valid: false,
+        message:
+          'Passport expiry date is required.',
+      };
+    }
+
+    const expiry =
+      parseDate(
+        passenger.passport_expiry_date
+      );
+
+    if (!expiry) {
+      return {
+        valid: false,
+        message:
+          'Please enter a valid passport expiry date.',
+      };
+    }
+
+    const minimumExpiry =
+      addMonths(
+        travel,
+        6
+      );
+
+    if (
+      expiry <
+      minimumExpiry
+    ) {
+      return {
+        valid: false,
+        message:
+          'Passport must be valid for at least 6 months after the departure date.',
+      };
+    }
+
+    if (
+      expiry <= dob
+    ) {
+      return {
+        valid: false,
+        message:
+          'Passport expiry date must be after the Date of Birth.',
+      };
+    }
+
+    return {
+      valid: true,
+      message: '',
+    };
+  }
+
+  /* ===========================================
+     PASSENGER STATUS
+  =========================================== */
+
+  function getPassengerStatus(
+    passenger
+  ) {
+    const result =
+      validatePassenger(
+        passenger
+      );
+
+    if (
+      !passenger.born_on &&
+      !passenger.passport_expiry_date
+    ) {
+      return {
+        dobValid: false,
+        expiryValid: false,
+        dobError: false,
+        expiryError: false,
+      };
+    }
+
+    const dob =
+      parseDate(
+        passenger.born_on
+      );
+
+    const travel =
+      parseDate(
+        departureDate
+      );
+
+    let dobValid =
+      false;
+
+    if (
+      dob &&
+      travel
+    ) {
+      const age =
+        calculateAgeOnDate(
+          passenger.born_on,
+          departureDate
+        );
+
+      if (
+        passenger.type ===
+        'adult'
+      ) {
+        dobValid =
+          age >= 18;
+      }
+
+      if (
+        passenger.type ===
+        'child'
+      ) {
+        dobValid =
+          age ===
+          Number(
+            passenger.age
+          );
+      }
+
+      if (
+        passenger.type ===
+        'infant'
+      ) {
+        dobValid =
+          age >= 0 &&
+          age < 2 &&
+          age ===
+            Number(
+              passenger.age
+            );
+      }
+    }
+
+    const expiry =
+      parseDate(
+        passenger.passport_expiry_date
+      );
+
+    let expiryValid =
+      false;
+
+    if (
+      expiry &&
+      travel &&
+      dob
+    ) {
+      const minimum =
+        addMonths(
+          travel,
+          6
+        );
+
+      expiryValid =
+        expiry >=
+          minimum &&
+        expiry > dob;
+    }
+
+    return {
+      dobValid,
+
+      expiryValid,
+
+      dobError:
+        Boolean(
+          passenger.born_on
+        ) &&
+        !dobValid,
+
+      expiryError:
+        Boolean(
+          passenger.passport_expiry_date
+        ) &&
+        !expiryValid,
+
+      overall:
+        result.valid,
+    };
+  }
+
+  /* ===========================================
+     ALL VALID?
+  =========================================== */
+
+  const allPassengersValid =
+    useMemo(() => {
+      if (
+        passengers.length ===
+        0
+      ) {
+        return false;
+      }
+
+      return passengers.every(
+        (passenger) => {
+          const result =
+            validatePassenger(
+              passenger
+            );
+
+          return result.valid;
+        }
+      );
+    }, [
+      passengers,
+      departureDate,
+    ]);
+
+  const contactValid =
+    Boolean(
+      contact.email &&
+        contact.email.includes(
+          '@'
+        ) &&
+        contact.phone_number
+    );
+
+  const canContinue =
+    allPassengersValid &&
+    contactValid;
+
+  /* ===========================================
+     SUBMIT
+  =========================================== */
+
+  function submit(event) {
+    event.preventDefault();
+
+    setError('');
+
+    for (
+      let i = 0;
+      i < passengers.length;
+      i++
+    ) {
+      const result =
+        validatePassenger(
+          passengers[i]
+        );
+
+      if (!result.valid) {
+        setError(
+          `Passenger ${i + 1}: ${result.message}`
+        );
+        return;
+      }
+
+      if (
+        !passengers[i]
+          .given_name ||
+        !passengers[i]
+          .family_name
+      ) {
+        setError(
+          `Please complete Passenger ${
+            i + 1
+          } name.`
+        );
+        return;
+      }
+    }
+
+    if (
+      !contactValid
+    ) {
+      setError(
+        'Please enter a valid contact email and phone number.'
+      );
+      return;
+    }
+
+    sessionStorage.setItem(
+      'tripScannerPassengers',
+      JSON.stringify(
+        passengers
+      )
+    );
+
+    sessionStorage.setItem(
+      'tripScannerContact',
+      JSON.stringify(
+        contact
+      )
+    );
+
+    sessionStorage.setItem(
+      'tripScannerOfferId',
+      sp.get(
+        'offerId'
+      ) || ''
+    );
+
+    router.push(
+      `/payment?offerId=${encodeURIComponent(
+        sp.get(
+          'offerId'
+        ) || ''
+      )}`
+    );
+  }
+
+  /* ===========================================
+     SEGMENTS
+  =========================================== */
+
+  const segments =
+    offer?.slices?.flatMap(
+      (slice) =>
+        slice.segments || []
+    ) || [];
 
   /* ===========================================
      PAGE
@@ -903,8 +1112,6 @@ function CheckoutContent() {
               </div>
             )}
 
-            {/* PASSENGERS */}
-
             {passengers.map(
               (
                 passenger,
@@ -915,6 +1122,11 @@ function CheckoutContent() {
                   getDobRange(
                     passenger,
                     departureDate
+                  );
+
+                const status =
+                  getPassengerStatus(
+                    passenger
                   );
 
                 return (
@@ -1035,6 +1247,10 @@ function CheckoutContent() {
                             dobRange.max ||
                             undefined
                           }
+                          style={fieldStyle(
+                            status.dobValid,
+                            status.dobError
+                          )}
                           onChange={(
                             e
                           ) =>
@@ -1047,32 +1263,89 @@ function CheckoutContent() {
                           required
                         />
 
-                        <small
-                          style={{
-                            display:
-                              'block',
+                        {status.dobError && (
+                          <small
+                            style={{
+                              display:
+                                'block',
 
-                            marginTop:
-                              '6px',
+                              marginTop:
+                                '6px',
 
-                            color:
-                              '#64748b',
-                          }}
-                        >
+                              color:
+                                '#dc2626',
 
-                          {passenger.type ===
-                            'adult' &&
-                            'Adult must be 18+ on the departure date.'}
+                              fontWeight:
+                                '600',
+                            }}
+                          >
 
-                          {passenger.type ===
-                            'child' &&
-                            `Child must be exactly age ${passenger.age} on the departure date.`}
+                            {passenger.type ===
+                              'adult' &&
+                              '❌ Adult must be 18+ on the departure date.'}
 
-                          {passenger.type ===
-                            'infant' &&
-                            `Infant must be under 2 years on the departure date.`}
+                            {passenger.type ===
+                              'child' &&
+                              `❌ Child must be exactly age ${passenger.age} on the departure date.`}
 
-                        </small>
+                            {passenger.type ===
+                              'infant' &&
+                              `❌ Infant must be ${infantAgeText(
+                                passenger.age
+                              )} and under 2 years on the departure date.`}
+
+                          </small>
+                        )}
+
+                        {status.dobValid && (
+                          <small
+                            style={{
+                              display:
+                                'block',
+
+                              marginTop:
+                                '6px',
+
+                              color:
+                                '#16a34a',
+
+                              fontWeight:
+                                '600',
+                            }}
+                          >
+                            ✓ Date of Birth is valid
+                          </small>
+                        )}
+
+                        {!status.dobValid &&
+                          !status.dobError && (
+                            <small
+                              style={{
+                                display:
+                                  'block',
+
+                                marginTop:
+                                  '6px',
+
+                                color:
+                                  '#64748b',
+                              }}
+                            >
+
+                              {passenger.type ===
+                                'adult' &&
+                                'Adult must be 18+ on the departure date.'}
+
+                              {passenger.type ===
+                                'child' &&
+                                `Child must be exactly age ${passenger.age} on the departure date.`}
+
+                              {passenger.type ===
+                                'infant' &&
+                                `Infant must be under 2 years on the departure date.`}
+
+                            </small>
+                          )}
 
                       </label>
 
@@ -1172,6 +1445,10 @@ function CheckoutContent() {
                             passportMinDate ||
                             undefined
                           }
+                          style={fieldStyle(
+                            status.expiryValid,
+                            status.expiryError
+                          )}
                           onChange={(
                             e
                           ) =>
@@ -1184,20 +1461,63 @@ function CheckoutContent() {
                           required
                         />
 
-                        <small
-                          style={{
-                            display:
-                              'block',
+                        {status.expiryError && (
+                          <small
+                            style={{
+                              display:
+                                'block',
 
-                            marginTop:
-                              '6px',
+                              marginTop:
+                                '6px',
 
-                            color:
-                              '#64748b',
-                          }}
-                        >
-                          Must be valid for at least 6 months after departure.
-                        </small>
+                              color:
+                                '#dc2626',
+
+                              fontWeight:
+                                '600',
+                            }}
+                          >
+                            ❌ Passport must be valid for at least 6 months after departure.
+                          </small>
+                        )}
+
+                        {status.expiryValid && (
+                          <small
+                            style={{
+                              display:
+                                'block',
+
+                              marginTop:
+                                '6px',
+
+                              color:
+                                '#16a34a',
+
+                              fontWeight:
+                                '600',
+                            }}
+                          >
+                            ✓ Passport expiry date is valid
+                          </small>
+                        )}
+
+                        {!status.expiryValid &&
+                          !status.expiryError && (
+                            <small
+                              style={{
+                                display:
+                                  'block',
+
+                                marginTop:
+                                  '6px',
+
+                                color:
+                                  '#64748b',
+                              }}
+                            >
+                              Passport must be valid for at least 6 months after departure.
+                            </small>
+                          )}
 
                       </label>
 
@@ -1252,6 +1572,25 @@ function CheckoutContent() {
                     value={
                       contact.email
                     }
+                    style={{
+                      ...(contact.email
+                        ? contact.email.includes(
+                            '@'
+                          )
+                          ? {
+                              border:
+                                '2px solid #16a34a',
+                              background:
+                                '#f0fdf4',
+                            }
+                          : {
+                              border:
+                                '2px solid #dc2626',
+                              background:
+                                '#fef2f2',
+                            }
+                        : {}),
+                    }}
                     onChange={(
                       e
                     ) =>
@@ -1292,22 +1631,39 @@ function CheckoutContent() {
 
             </div>
 
+            {/* CONTINUE */}
+
             <button
               type="submit"
               className="primary wide"
+              disabled={
+                !canContinue
+              }
               style={{
                 marginTop:
                   '24px',
+
+                opacity:
+                  canContinue
+                    ? 1
+                    : 0.5,
+
+                cursor:
+                  canContinue
+                    ? 'pointer'
+                    : 'not-allowed',
               }}
             >
-              Continue to payment →
+              {canContinue
+                ? 'Continue to payment →'
+                : 'Complete passenger details →'}
             </button>
 
           </form>
 
         </section>
 
-        {/* BOOKING SUMMARY */}
+        {/* SUMMARY */}
 
         <aside className="summary">
 
