@@ -31,9 +31,9 @@ function time(value) {
   });
 }
 
-/* =========================================
-   DATE HELPERS
-========================================= */
+// ---------------------------------------------
+// DATE HELPERS
+// ---------------------------------------------
 
 function parseDate(value) {
   if (!value) return null;
@@ -47,35 +47,69 @@ function parseDate(value) {
   return date;
 }
 
-function startOfToday() {
-  const now = new Date();
+function formatDateInput(date) {
+  const year = date.getFullYear();
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, '0');
 
-  return new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  );
+  const day = String(
+    date.getDate()
+  ).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
 
-function calculateAge(bornOn, referenceDate) {
-  const dob = parseDate(bornOn);
-  const ref = referenceDate || startOfToday();
+function addMonths(date, months) {
+  const result = new Date(date);
 
-  if (!dob) return null;
+  result.setMonth(
+    result.getMonth() + months
+  );
+
+  return result;
+}
+
+function subtractYears(date, years) {
+  const result = new Date(date);
+
+  result.setFullYear(
+    result.getFullYear() - years
+  );
+
+  return result;
+}
+
+// ---------------------------------------------
+// AGE CALCULATION
+// ---------------------------------------------
+
+function calculateAgeOnDate(
+  dobString,
+  travelDateString
+) {
+  const dob = parseDate(dobString);
+  const travelDate =
+    parseDate(travelDateString);
+
+  if (!dob || !travelDate) {
+    return null;
+  }
 
   let age =
-    ref.getFullYear() -
+    travelDate.getFullYear() -
     dob.getFullYear();
 
   const monthDifference =
-    ref.getMonth() -
+    travelDate.getMonth() -
     dob.getMonth();
 
   if (
     monthDifference < 0 ||
     (
       monthDifference === 0 &&
-      ref.getDate() < dob.getDate()
+      travelDate.getDate() <
+        dob.getDate()
     )
   ) {
     age--;
@@ -84,26 +118,164 @@ function calculateAge(bornOn, referenceDate) {
   return age;
 }
 
-function getDepartureDate(searchParams) {
-  const departureDate =
-    searchParams.get('departureDate');
+// ---------------------------------------------
+// DOB RANGE
+// ---------------------------------------------
 
-  if (departureDate) {
-    return parseDate(departureDate);
+function getDobRange(
+  passenger,
+  departureDate
+) {
+  const travelDate =
+    parseDate(departureDate);
+
+  if (!travelDate) {
+    return {
+      min: '',
+      max: '',
+    };
   }
 
-  return startOfToday();
+  // -------------------------------------------
+  // ADULT
+  // Must be 18+
+  // -------------------------------------------
+
+  if (passenger.type === 'adult') {
+    const latestDob =
+      subtractYears(
+        travelDate,
+        18
+      );
+
+    const earliestDob =
+      subtractYears(
+        travelDate,
+        100
+      );
+
+    return {
+      min: formatDateInput(
+        earliestDob
+      ),
+      max: formatDateInput(
+        latestDob
+      ),
+    };
+  }
+
+  // -------------------------------------------
+  // CHILD
+  // Exact selected age
+  // -------------------------------------------
+
+  if (passenger.type === 'child') {
+    const selectedAge =
+      Number(passenger.age);
+
+    const latestDob =
+      subtractYears(
+        travelDate,
+        selectedAge
+      );
+
+    const nextBirthday =
+      subtractYears(
+        travelDate,
+        selectedAge + 1
+      );
+
+    const earliestAllowedDob =
+      new Date(nextBirthday);
+
+    earliestAllowedDob.setDate(
+      earliestAllowedDob.getDate() + 1
+    );
+
+    return {
+      min: formatDateInput(
+        earliestAllowedDob
+      ),
+      max: formatDateInput(
+        latestDob
+      ),
+    };
+  }
+
+  // -------------------------------------------
+  // INFANT
+  // Exact selected age
+  // -------------------------------------------
+
+  if (passenger.type === 'infant') {
+    const selectedAge =
+      Number(passenger.age);
+
+    const latestDob =
+      subtractYears(
+        travelDate,
+        selectedAge
+      );
+
+    const nextBirthday =
+      subtractYears(
+        travelDate,
+        selectedAge + 1
+      );
+
+    const earliestAllowedDob =
+      new Date(nextBirthday);
+
+    earliestAllowedDob.setDate(
+      earliestAllowedDob.getDate() + 1
+    );
+
+    return {
+      min: formatDateInput(
+        earliestAllowedDob
+      ),
+      max: formatDateInput(
+        latestDob
+      ),
+    };
+  }
+
+  return {
+    min: '',
+    max: '',
+  };
 }
 
-/* =========================================
-   CHECKOUT
-========================================= */
+// ---------------------------------------------
+// DISPLAY AGE
+// ---------------------------------------------
+
+function passengerLabel(passenger) {
+  if (passenger.type === 'adult') {
+    return 'Adult';
+  }
+
+  if (passenger.type === 'child') {
+    return `Child · age ${passenger.age}`;
+  }
+
+  if (passenger.type === 'infant') {
+    return `Infant · age ${passenger.age}`;
+  }
+
+  return passenger.type;
+}
+
+// ---------------------------------------------
+// MAIN CHECKOUT
+// ---------------------------------------------
 
 function CheckoutContent() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const [offer, setOffer] = useState(null);
+  const [offer, setOffer] =
+    useState(null);
 
   const [passengers, setPassengers] =
     useState([]);
@@ -117,23 +289,40 @@ function CheckoutContent() {
   const [error, setError] =
     useState('');
 
+  // -------------------------------------------
+  // CREATE PASSENGERS
+  // -------------------------------------------
+
   useEffect(() => {
     const offerId =
       sp.get('offerId');
 
     const adults = Math.max(
       1,
-      Number(sp.get('adults') || 1)
+      Number(
+        sp.get('adults') || 1
+      )
     );
 
+    // Child ages from home page
     const childAges =
-      sp.getAll('childAge');
+      sp.getAll('childAge')
+        .filter(
+          (age) => age !== ''
+        );
+
+    // Infant ages from home page
+    const infantAges =
+      sp.getAll('infantAge')
+        .filter(
+          (age) => age !== ''
+        );
 
     const passengerList = [];
 
-    /* =====================================
-       ADULTS
-    ===================================== */
+    // -----------------------------------------
+    // ADULTS
+    // -----------------------------------------
 
     for (
       let i = 0;
@@ -149,41 +338,60 @@ function CheckoutContent() {
         born_on: '',
         gender: 'm',
         nationality: 'GB',
-
         passport_number: '',
         passport_expiry_date: '',
       });
     }
 
-    /* =====================================
-       CHILDREN
-    ===================================== */
+    // -----------------------------------------
+    // CHILDREN
+    // -----------------------------------------
 
-    childAges.forEach((age) => {
-      if (age === '') return;
+    childAges.forEach(
+      (age) => {
+        passengerList.push({
+          type: 'child',
+          age: Number(age),
 
-      passengerList.push({
-        type: 'child',
-        age: Number(age),
+          given_name: '',
+          family_name: '',
+          born_on: '',
+          gender: 'm',
+          nationality: 'GB',
+          passport_number: '',
+          passport_expiry_date: '',
+        });
+      }
+    );
 
-        given_name: '',
-        family_name: '',
-        born_on: '',
-        gender: 'm',
-        nationality: 'GB',
+    // -----------------------------------------
+    // INFANTS
+    // -----------------------------------------
 
-        passport_number: '',
-        passport_expiry_date: '',
-      });
-    });
+    infantAges.forEach(
+      (age) => {
+        passengerList.push({
+          type: 'infant',
+          age: Number(age),
+
+          given_name: '',
+          family_name: '',
+          born_on: '',
+          gender: 'm',
+          nationality: 'GB',
+          passport_number: '',
+          passport_expiry_date: '',
+        });
+      }
+    );
 
     setPassengers(
       passengerList
     );
 
-    /* =====================================
-       LOAD OFFER
-    ===================================== */
+    // -----------------------------------------
+    // LOAD OFFER
+    // -----------------------------------------
 
     if (offerId) {
       fetch(
@@ -200,7 +408,7 @@ function CheckoutContent() {
           } else {
             setError(
               data.error ||
-              'Unable to load flight.'
+                'Unable to load flight.'
             );
           }
         })
@@ -212,52 +420,64 @@ function CheckoutContent() {
     }
   }, [sp]);
 
-  /* =========================================
-     UPDATE PASSENGER
-  ========================================= */
+  // -------------------------------------------
+  // UPDATE PASSENGER
+  // -------------------------------------------
 
   function updatePassenger(
     index,
     field,
     value
   ) {
-    setPassengers((current) =>
-      current.map(
-        (passenger, i) =>
-          i === index
-            ? {
-                ...passenger,
-                [field]: value,
-              }
-            : passenger
-      )
+    setPassengers(
+      (current) =>
+        current.map(
+          (passenger, i) =>
+            i === index
+              ? {
+                  ...passenger,
+                  [field]: value,
+                }
+              : passenger
+        )
     );
   }
 
-  /* =========================================
-     UPDATE CONTACT
-  ========================================= */
+  // -------------------------------------------
+  // CONTACT
+  // -------------------------------------------
 
   function updateContact(
     field,
     value
   ) {
-    setContact((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setContact(
+      (current) => ({
+        ...current,
+        [field]: value,
+      })
+    );
   }
 
-  /* =========================================
-     VALIDATE PASSENGERS
-  ========================================= */
+  // -------------------------------------------
+  // SUBMIT / VALIDATION
+  // -------------------------------------------
 
-  function validatePassengers() {
+  function submit(event) {
+    event.preventDefault();
+
+    setError('');
+
     const departureDate =
-      getDepartureDate(sp);
+      sp.get('departureDate') ||
+      offer?.slices?.[0]
+        ?.segments?.[0]
+        ?.departing_at
+        ?.slice(0, 10);
 
-    const today =
-      startOfToday();
+    // -----------------------------------------
+    // PASSENGER VALIDATION
+    // -----------------------------------------
 
     for (
       let i = 0;
@@ -270,256 +490,194 @@ function CheckoutContent() {
       const passengerNumber =
         i + 1;
 
-      /* ================================
-         NAME
-      ================================= */
-
+      // Required names
       if (
         !passenger.given_name ||
-        !passenger.given_name.trim()
+        !passenger.family_name
       ) {
-        return `Please enter first name for Passenger ${passengerNumber}.`;
-      }
-
-      if (
-        !passenger.family_name ||
-        !passenger.family_name.trim()
-      ) {
-        return `Please enter last name for Passenger ${passengerNumber}.`;
-      }
-
-      /* ================================
-         DOB REQUIRED
-      ================================= */
-
-      if (!passenger.born_on) {
-        return `Please enter date of birth for Passenger ${passengerNumber}.`;
-      }
-
-      const dob =
-        parseDate(
-          passenger.born_on
+        setError(
+          `Please complete Passenger ${passengerNumber} name.`
         );
-
-      if (!dob) {
-        return `Invalid date of birth for Passenger ${passengerNumber}.`;
+        return;
       }
 
-      /* ================================
-         DOB CANNOT BE FUTURE
-      ================================= */
-
-      if (dob > today) {
-        return `Date of birth cannot be in the future for Passenger ${passengerNumber}.`;
+      // DOB required
+      if (!passenger.born_on) {
+        setError(
+          `Please enter Date of Birth for Passenger ${passengerNumber}.`
+        );
+        return;
       }
 
-      /* ================================
-         AGE AT TRAVEL
-      ================================= */
+      // ---------------------------------------
+      // AGE CHECK
+      // ---------------------------------------
 
-      const ageAtTravel =
-        calculateAge(
+      const calculatedAge =
+        calculateAgeOnDate(
           passenger.born_on,
           departureDate
         );
 
       if (
-        ageAtTravel === null ||
-        ageAtTravel < 0
+        calculatedAge === null
       ) {
-        return `Invalid date of birth for Passenger ${passengerNumber}.`;
+        setError(
+          `Invalid Date of Birth for Passenger ${passengerNumber}.`
+        );
+        return;
       }
 
-      /* ================================
-         ADULT VALIDATION
-      ================================= */
+      // ---------------------------------------
+      // ADULT MUST BE 18+
+      // ---------------------------------------
 
       if (
-        passenger.type === 'adult'
+        passenger.type ===
+          'adult' &&
+        calculatedAge < 18
       ) {
-        if (ageAtTravel < 18) {
-          return `Passenger ${passengerNumber} must be 18 or older.`;
-        }
+        setError(
+          `Passenger ${passengerNumber} is selected as Adult. Date of Birth must make the passenger 18 years or older on the travel date.`
+        );
+        return;
       }
 
-      /* ================================
-         CHILD VALIDATION
-      ================================= */
+      // ---------------------------------------
+      // CHILD EXACT AGE
+      // ---------------------------------------
 
       if (
-        passenger.type === 'child'
+        passenger.type ===
+          'child'
       ) {
-        const selectedChildAge =
-          Number(passenger.age);
-
         if (
-          !Number.isFinite(
-            selectedChildAge
-          )
+          calculatedAge !==
+          Number(passenger.age)
         ) {
-          return `Child age is missing for Passenger ${passengerNumber}.`;
-        }
-
-        if (
-          ageAtTravel !==
-          selectedChildAge
-        ) {
-          return `Passenger ${passengerNumber} must be exactly ${selectedChildAge} years old on the departure date.`;
-        }
-
-        if (
-          ageAtTravel >= 18
-        ) {
-          return `Passenger ${passengerNumber} cannot be booked as a child.`;
+          setError(
+            `Passenger ${passengerNumber} is selected as Child age ${passenger.age}. Please enter a Date of Birth matching that age on the travel date.`
+          );
+          return;
         }
       }
 
-      /* ================================
-         PASSPORT NUMBER
-      ================================= */
+      // ---------------------------------------
+      // INFANT EXACT AGE
+      // ---------------------------------------
 
       if (
-        !passenger.passport_number ||
-        !passenger.passport_number.trim()
+        passenger.type ===
+          'infant'
       ) {
-        return `Please enter passport number for Passenger ${passengerNumber}.`;
+        if (
+          calculatedAge !==
+          Number(passenger.age)
+        ) {
+          setError(
+            `Passenger ${passengerNumber} is selected as Infant age ${passenger.age}. Please enter a Date of Birth matching that age on the travel date.`
+          );
+          return;
+        }
+
+        if (
+          calculatedAge < 0 ||
+          calculatedAge > 1
+        ) {
+          setError(
+            `Passenger ${passengerNumber} must be an infant aged 0–1 on the travel date.`
+          );
+          return;
+        }
       }
 
-      /* ================================
-         PASSPORT EXPIRY REQUIRED
-      ================================= */
+      // ---------------------------------------
+      // PASSPORT EXPIRY
+      // ---------------------------------------
 
       if (
         !passenger.passport_expiry_date
       ) {
-        return `Please enter passport expiry date for Passenger ${passengerNumber}.`;
+        setError(
+          `Please enter passport expiry date for Passenger ${passengerNumber}.`
+        );
+        return;
       }
 
-      const expiry =
+      const expiryDate =
         parseDate(
           passenger.passport_expiry_date
         );
 
-      if (!expiry) {
-        return `Invalid passport expiry date for Passenger ${passengerNumber}.`;
+      const travelDate =
+        parseDate(
+          departureDate
+        );
+
+      if (
+        !expiryDate ||
+        !travelDate
+      ) {
+        setError(
+          `Invalid passport expiry date for Passenger ${passengerNumber}.`
+        );
+        return;
       }
 
-      /* ================================
-         PASSPORT CANNOT EXPIRE TODAY/PAST
-      ================================= */
+      // Passport must be valid for
+      // at least 6 months from departure
+      const minimumExpiry =
+        addMonths(
+          travelDate,
+          6
+        );
 
-      if (expiry <= today) {
-        return `Passport for Passenger ${passengerNumber} must be valid on the booking date.`;
+      if (
+        expiryDate <
+        minimumExpiry
+      ) {
+        setError(
+          `Passport for Passenger ${passengerNumber} must be valid for at least 6 months after the departure date.`
+        );
+        return;
       }
 
-      /* ================================
-         EXPIRY MUST BE AFTER DOB
-      ================================= */
-
-      if (expiry <= dob) {
-        return `Passport expiry date is invalid for Passenger ${passengerNumber}.`;
+      // Passport expiry cannot be
+      // before DOB
+      if (
+        expiryDate <=
+        parseDate(
+          passenger.born_on
+        )
+      ) {
+        setError(
+          `Passport expiry date for Passenger ${passengerNumber} must be after the Date of Birth.`
+        );
+        return;
       }
     }
 
-    return '';
-  }
+    // -----------------------------------------
+    // CONTACT VALIDATION
+    // -----------------------------------------
 
-  /* =========================================
-     SUBMIT
-  ========================================= */
-
-  function submit(event) {
-    event.preventDefault();
-
-    setError('');
-
-    /* ================================
-       PASSENGER VALIDATION
-    ================================= */
-
-    const passengerError =
-      validatePassengers();
-
-    if (passengerError) {
-      setError(
-        passengerError
-      );
-
-      return;
-    }
-
-    /* ================================
-       CONTACT EMAIL
-    ================================= */
-
-    if (
-      !contact.email ||
-      !contact.email.trim()
-    ) {
+    if (!contact.email) {
       setError(
         'Please enter the contact email address.'
       );
-
       return;
     }
 
-    /* ================================
-       EMAIL FORMAT
-    ================================= */
-
-    const emailPattern =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (
-      !emailPattern.test(
-        contact.email.trim()
-      )
-    ) {
-      setError(
-        'Please enter a valid email address.'
-      );
-
-      return;
-    }
-
-    /* ================================
-       PHONE
-    ================================= */
-
-    if (
-      !contact.phone_number ||
-      !contact.phone_number.trim()
-    ) {
+    if (!contact.phone_number) {
       setError(
         'Please enter the contact phone number.'
       );
-
       return;
     }
 
-    /* ================================
-       PHONE FORMAT
-    ================================= */
-
-    const phoneDigits =
-      contact.phone_number.replace(
-        /\D/g,
-        ''
-      );
-
-    if (
-      phoneDigits.length < 7
-    ) {
-      setError(
-        'Please enter a valid phone number.'
-      );
-
-      return;
-    }
-
-    /* ================================
-       SAVE PASSENGERS
-    ================================= */
+    // -----------------------------------------
+    // SAVE DATA
+    // -----------------------------------------
 
     sessionStorage.setItem(
       'tripScannerPassengers',
@@ -528,10 +686,6 @@ function CheckoutContent() {
       )
     );
 
-    /* ================================
-       SAVE CONTACT
-    ================================= */
-
     sessionStorage.setItem(
       'tripScannerContact',
       JSON.stringify(
@@ -539,18 +693,14 @@ function CheckoutContent() {
       )
     );
 
-    /* ================================
-       SAVE OFFER
-    ================================= */
-
     sessionStorage.setItem(
       'tripScannerOfferId',
       sp.get('offerId') || ''
     );
 
-    /* ================================
-       GO TO PAYMENT
-    ================================= */
+    // -----------------------------------------
+    // PAYMENT
+    // -----------------------------------------
 
     router.push(
       `/payment?offerId=${encodeURIComponent(
@@ -559,9 +709,9 @@ function CheckoutContent() {
     );
   }
 
-  /* =========================================
-     FLIGHT SEGMENTS
-  ========================================= */
+  // -------------------------------------------
+  // FLIGHT SEGMENTS
+  // -------------------------------------------
 
   const segments =
     offer?.slices?.flatMap(
@@ -569,14 +719,36 @@ function CheckoutContent() {
         slice.segments || []
     ) || [];
 
-  /* =========================================
-     PAGE
-  ========================================= */
+  // -------------------------------------------
+  // DEPARTURE DATE
+  // -------------------------------------------
+
+  const departureDate =
+    sp.get('departureDate') ||
+    offer?.slices?.[0]
+      ?.segments?.[0]
+      ?.departing_at
+      ?.slice(0, 10);
+
+  // Passport minimum expiry date
+  const passportMinDate =
+    departureDate
+      ? formatDateInput(
+          addMonths(
+            parseDate(
+              departureDate
+            ),
+            6
+          )
+        )
+      : '';
+
+  // -------------------------------------------
+  // PAGE
+  // -------------------------------------------
 
   return (
     <main className="checkout-shell">
-
-      {/* HEADER */}
 
       <header className="site-header">
 
@@ -593,14 +765,9 @@ function CheckoutContent() {
 
       <div className="checkout-grid">
 
-        {/* =================================
-            LEFT SIDE
-        ================================== */}
-
         <section>
 
           <div className="stepbar">
-
             <b>
               1 Passenger
             </b>
@@ -612,7 +779,6 @@ function CheckoutContent() {
             <span>
               3 Confirmation
             </span>
-
           </div>
 
           <form
@@ -625,25 +791,13 @@ function CheckoutContent() {
             </h1>
 
             <p>
-              Enter passenger details
-              exactly as shown on the
-              passport or travel document.
+              Enter passenger details exactly
+              as shown on the passport or
+              travel document.
             </p>
 
-            {/* ERROR */}
-
             {error && (
-              <div
-                className="error"
-                style={{
-                  marginBottom:
-                    '20px',
-                  padding:
-                    '14px 16px',
-                  borderRadius:
-                    '10px',
-                }}
-              >
+              <div className="error">
                 ⚠ {error}
               </div>
             )}
@@ -656,262 +810,274 @@ function CheckoutContent() {
               (
                 passenger,
                 index
-              ) => (
+              ) => {
 
-                <div
-                  key={index}
-                  className="passenger-section"
-                  style={{
-                    marginBottom:
-                      '28px',
-                    paddingBottom:
-                      '24px',
-                    borderBottom:
-                      '1px solid #e5e7eb',
-                  }}
-                >
+                const dobRange =
+                  getDobRange(
+                    passenger,
+                    departureDate
+                  );
 
-                  <h2>
-                    Passenger{' '}
-                    {index + 1}{' '}
+                return (
+                  <div
+                    key={index}
+                    className="passenger-section"
+                    style={{
+                      marginBottom:
+                        '28px',
+                      paddingBottom:
+                        '24px',
+                      borderBottom:
+                        '1px solid #e5e7eb',
+                    }}
+                  >
 
-                    <span
-                      style={{
-                        fontSize:
-                          '14px',
-                        fontWeight:
-                          '500',
-                        color:
-                          '#64748b',
-                      }}
+                    <h2>
+
+                      Passenger{' '}
+                      {index + 1}{' '}
+
+                      <span
+                        style={{
+                          fontSize:
+                            '14px',
+                          fontWeight:
+                            '500',
+                          color:
+                            '#64748b',
+                        }}
+                      >
+                        (
+                        {passengerLabel(
+                          passenger
+                        )}
+                        )
+                      </span>
+
+                    </h2>
+
+                    <div
+                      className="form-grid"
                     >
-                      (
-                      {
-                        passenger.type ===
-                        'child'
-                          ? `Child · age ${passenger.age}`
-                          : 'Adult'
-                      }
-                      )
-                    </span>
 
-                  </h2>
+                      {/* FIRST NAME */}
 
-                  <div className="form-grid">
+                      <label>
+                        First name *
 
-                    {/* FIRST NAME */}
+                        <input
+                          type="text"
+                          value={
+                            passenger.given_name
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePassenger(
+                              index,
+                              'given_name',
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </label>
 
-                    <label>
-                      First name *
+                      {/* LAST NAME */}
 
-                      <input
-                        type="text"
-                        value={
-                          passenger.given_name
-                        }
-                        onChange={(e) =>
-                          updatePassenger(
-                            index,
-                            'given_name',
-                            e.target.value
-                          )
-                        }
-                        required
-                      />
+                      <label>
+                        Last name *
 
-                    </label>
+                        <input
+                          type="text"
+                          value={
+                            passenger.family_name
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePassenger(
+                              index,
+                              'family_name',
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
+                      </label>
 
-                    {/* LAST NAME */}
+                      {/* DOB */}
 
-                    <label>
-                      Last name *
+                      <label>
+                        Date of birth *
 
-                      <input
-                        type="text"
-                        value={
-                          passenger.family_name
-                        }
-                        onChange={(e) =>
-                          updatePassenger(
-                            index,
-                            'family_name',
-                            e.target.value
-                          )
-                        }
-                        required
-                      />
+                        <input
+                          type="date"
+                          value={
+                            passenger.born_on
+                          }
+                          min={
+                            dobRange.min ||
+                            undefined
+                          }
+                          max={
+                            dobRange.max ||
+                            undefined
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePassenger(
+                              index,
+                              'born_on',
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
 
-                    </label>
+                        <small
+                          style={{
+                            display:
+                              'block',
+                            marginTop:
+                              '6px',
+                            color:
+                              '#64748b',
+                          }}
+                        >
+                          {passenger.type ===
+                            'adult' &&
+                            'Adult must be 18+ on the departure date.'}
 
-                    {/* DOB */}
+                          {passenger.type ===
+                            'child' &&
+                            `Child must be exactly age ${passenger.age} on the departure date.`}
 
-                    <label>
-                      Date of birth *
+                          {passenger.type ===
+                            'infant' &&
+                            `Infant must be exactly age ${passenger.age} on the departure date.`}
+                        </small>
+                      </label>
 
-                      <input
-                        type="date"
-                        value={
-                          passenger.born_on
-                        }
-                        max={
-                          new Date()
-                            .toISOString()
-                            .split('T')[0]
-                        }
-                        onChange={(e) =>
-                          updatePassenger(
-                            index,
-                            'born_on',
-                            e.target.value
-                          )
-                        }
-                        required
-                      />
+                      {/* GENDER */}
 
-                      <small
-                        style={{
-                          display:
-                            'block',
-                          marginTop:
-                            '5px',
-                          color:
-                            '#64748b',
-                        }}
-                      >
-                        Must match the
-                        passenger's real
-                        date of birth.
-                      </small>
+                      <label>
+                        Gender
 
-                    </label>
+                        <select
+                          value={
+                            passenger.gender
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePassenger(
+                              index,
+                              'gender',
+                              e.target.value
+                            )
+                          }
+                        >
+                          <option value="m">
+                            Male
+                          </option>
 
-                    {/* GENDER */}
+                          <option value="f">
+                            Female
+                          </option>
+                        </select>
+                      </label>
 
-                    <label>
-                      Gender
+                      {/* NATIONALITY */}
 
-                      <select
-                        value={
-                          passenger.gender
-                        }
-                        onChange={(e) =>
-                          updatePassenger(
-                            index,
-                            'gender',
-                            e.target.value
-                          )
-                        }
-                      >
+                      <label>
+                        Nationality
 
-                        <option value="m">
-                          Male
-                        </option>
+                        <input
+                          type="text"
+                          value={
+                            passenger.nationality
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePassenger(
+                              index,
+                              'nationality',
+                              e.target.value.toUpperCase()
+                            )
+                          }
+                        />
+                      </label>
 
-                        <option value="f">
-                          Female
-                        </option>
+                      {/* PASSPORT */}
 
-                      </select>
+                      <label>
+                        Passport number
 
-                    </label>
+                        <input
+                          type="text"
+                          value={
+                            passenger.passport_number
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePassenger(
+                              index,
+                              'passport_number',
+                              e.target.value
+                            )
+                          }
+                        />
+                      </label>
 
-                    {/* NATIONALITY */}
+                      {/* PASSPORT EXPIRY */}
 
-                    <label>
-                      Nationality
+                      <label>
+                        Passport expiry *
 
-                      <input
-                        type="text"
-                        value={
-                          passenger.nationality
-                        }
-                        maxLength={2}
-                        placeholder="GB"
-                        onChange={(e) =>
-                          updatePassenger(
-                            index,
-                            'nationality',
-                            e.target.value.toUpperCase()
-                          )
-                        }
-                      />
+                        <input
+                          type="date"
+                          value={
+                            passenger.passport_expiry_date
+                          }
+                          min={
+                            passportMinDate ||
+                            undefined
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            updatePassenger(
+                              index,
+                              'passport_expiry_date',
+                              e.target.value
+                            )
+                          }
+                          required
+                        />
 
-                    </label>
+                        <small
+                          style={{
+                            display:
+                              'block',
+                            marginTop:
+                              '6px',
+                            color:
+                              '#64748b',
+                          }}
+                        >
+                          Must be valid for at least 6 months after departure.
+                        </small>
+                      </label>
 
-                    {/* PASSPORT NUMBER */}
-
-                    <label>
-                      Passport number *
-
-                      <input
-                        type="text"
-                        value={
-                          passenger.passport_number
-                        }
-                        onChange={(e) =>
-                          updatePassenger(
-                            index,
-                            'passport_number',
-                            e.target.value.toUpperCase()
-                          )
-                        }
-                        required
-                      />
-
-                    </label>
-
-                    {/* PASSPORT EXPIRY */}
-
-                    <label>
-                      Passport expiry *
-
-                      <input
-                        type="date"
-                        value={
-                          passenger.passport_expiry_date
-                        }
-                        min={
-                          new Date(
-                            Date.now() +
-                            24 *
-                            60 *
-                            60 *
-                            1000
-                          )
-                            .toISOString()
-                            .split('T')[0]
-                        }
-                        onChange={(e) =>
-                          updatePassenger(
-                            index,
-                            'passport_expiry_date',
-                            e.target.value
-                          )
-                        }
-                        required
-                      />
-
-                      <small
-                        style={{
-                          display:
-                            'block',
-                          marginTop:
-                            '5px',
-                          color:
-                            '#64748b',
-                        }}
-                      >
-                        Passport must still
-                        be valid.
-                      </small>
-
-                    </label>
+                    </div>
 
                   </div>
-
-                </div>
-
-              )
+                );
+              }
             )}
 
             {/* =================================
@@ -942,13 +1108,12 @@ function CheckoutContent() {
               <p>
                 We'll send your booking
                 confirmation and important
-                flight updates to these
-                details.
+                flight updates to these details.
               </p>
 
-              <div className="form-grid">
-
-                {/* EMAIL */}
+              <div
+                className="form-grid"
+              >
 
                 <label>
                   Email address *
@@ -959,7 +1124,9 @@ function CheckoutContent() {
                     value={
                       contact.email
                     }
-                    onChange={(e) =>
+                    onChange={(
+                      e
+                    ) =>
                       updateContact(
                         'email',
                         e.target.value
@@ -967,10 +1134,7 @@ function CheckoutContent() {
                     }
                     required
                   />
-
                 </label>
-
-                {/* PHONE */}
 
                 <label>
                   Phone number *
@@ -981,7 +1145,9 @@ function CheckoutContent() {
                     value={
                       contact.phone_number
                     }
-                    onChange={(e) =>
+                    onChange={(
+                      e
+                    ) =>
                       updateContact(
                         'phone_number',
                         e.target.value
@@ -989,16 +1155,13 @@ function CheckoutContent() {
                     }
                     required
                   />
-
                 </label>
 
               </div>
 
             </div>
 
-            {/* =================================
-                CONTINUE
-            ================================== */}
+            {/* CONTINUE */}
 
             <button
               type="submit"
@@ -1030,7 +1193,6 @@ function CheckoutContent() {
               segment,
               index
             ) => (
-
               <div
                 className="summary-leg"
                 key={index}
@@ -1058,11 +1220,9 @@ function CheckoutContent() {
                       .destination
                       ?.iata_code
                   }
-
                 </b>
 
                 <small>
-
                   {
                     segment
                       .marketing_carrier
@@ -1075,11 +1235,9 @@ function CheckoutContent() {
                     segment
                       .marketing_carrier_flight_number
                   }
-
                 </small>
 
               </div>
-
             )
           )}
 
@@ -1090,13 +1248,11 @@ function CheckoutContent() {
             </span>
 
             <strong>
-
               {offer &&
                 money(
                   offer.total_amount,
                   offer.total_currency
                 )}
-
             </strong>
 
           </div>
@@ -1109,9 +1265,9 @@ function CheckoutContent() {
   );
 }
 
-/* =========================================
-   EXPORT
-========================================= */
+// ---------------------------------------------
+// EXPORT
+// ---------------------------------------------
 
 export default function Checkout() {
   return (
