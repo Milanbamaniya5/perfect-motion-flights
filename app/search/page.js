@@ -34,6 +34,8 @@ function date(value) {
 }
 
 function mins(a, b) {
+  if (!a || !b) return 0;
+
   return Math.max(
     0,
     Math.round(
@@ -42,7 +44,7 @@ function mins(a, b) {
   );
 }
 
-function dur(minutes) {
+function durationText(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
 
@@ -51,20 +53,20 @@ function dur(minutes) {
   return `${m}m`;
 }
 
-function details(offer) {
-  const segs =
+function getFlightDetails(offer) {
+  const segments =
     offer?.slices?.flatMap((slice) => slice.segments || []) || [];
 
-  const duration = segs.reduce(
+  const duration = segments.reduce(
     (total, segment) =>
       total + mins(segment.departing_at, segment.arriving_at),
     0
   );
 
-  const stops = Math.max(0, segs.length - 1);
+  const stops = Math.max(0, segments.length - 1);
 
   return {
-    segs,
+    segments,
     duration,
     stops,
   };
@@ -72,16 +74,36 @@ function details(offer) {
 
 function SearchContent() {
   const router = useRouter();
-  const sp = useSearchParams();
+  const searchParams = useSearchParams();
 
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [sort, setSort] = useState('best');
-  const [stops, setStops] = useState('all');
-  const [airline, setAirline] = useState('all');
+  const [stopsFilter, setStopsFilter] = useState('all');
+  const [airlineFilter, setAirlineFilter] = useState('all');
   const [maxPrice, setMaxPrice] = useState('');
+
+  // ------------------------------------
+  // TOTAL PASSENGERS
+  // ------------------------------------
+
+  const adults = Math.max(
+    1,
+    Number(searchParams.get('adults') || 1)
+  );
+
+  const children = searchParams
+    .getAll('childAge')
+    .filter((age) => age !== '');
+
+  const passengerCount =
+    adults + children.length;
+
+  // ------------------------------------
+  // SEARCH FLIGHTS
+  // ------------------------------------
 
   useEffect(() => {
     async function searchFlights() {
@@ -91,7 +113,7 @@ function SearchContent() {
       try {
         const params = new URLSearchParams();
 
-        const copyParams = [
+        const keys = [
           'origin',
           'destination',
           'departureDate',
@@ -101,17 +123,16 @@ function SearchContent() {
           'cabin',
         ];
 
-        copyParams.forEach((key) => {
-          const value = sp.get(key);
+        keys.forEach((key) => {
+          const value = searchParams.get(key);
 
           if (value) {
             params.set(key, value);
           }
         });
 
-        // IMPORTANT:
-        // Send every child age to the API
-        sp.getAll('childAge').forEach((age) => {
+        // Send ALL child ages
+        searchParams.getAll('childAge').forEach((age) => {
           if (age !== '') {
             params.append('childAge', age);
           }
@@ -134,19 +155,28 @@ function SearchContent() {
 
         setOffers(data.offers || []);
       } catch (err) {
-        setError(err.message || 'Unable to search flights');
+        setError(
+          err.message || 'Unable to search flights'
+        );
       } finally {
         setLoading(false);
       }
     }
 
-    if (sp.get('origin') && sp.get('destination')) {
+    if (
+      searchParams.get('origin') &&
+      searchParams.get('destination')
+    ) {
       searchFlights();
     } else {
       setLoading(false);
       setError('Missing flight search details.');
     }
-  }, [sp]);
+  }, [searchParams]);
+
+  // ------------------------------------
+  // AIRLINES
+  // ------------------------------------
 
   const airlines = [
     ...new Set(
@@ -156,118 +186,158 @@ function SearchContent() {
     ),
   ];
 
-  const prices = offers
-    .map((offer) => Number(offer.total_amount) || 0)
-    .filter((price) => price > 0);
+  // ------------------------------------
+  // FILTER + SORT
+  // ------------------------------------
 
-  const highest = Math.ceil(
-    Math.max(...prices, 0)
-  );
-
-  const filtered = useMemo(() => {
+  const filteredOffers = useMemo(() => {
     let list = [...offers];
 
-    if (stops !== 'all') {
-      if (stops === '2') {
+    // Stops
+    if (stopsFilter !== 'all') {
+      if (stopsFilter === '2') {
         list = list.filter(
-          (offer) => details(offer).stops >= 2
+          (offer) =>
+            getFlightDetails(offer).stops >= 2
         );
       } else {
         list = list.filter(
           (offer) =>
-            details(offer).stops === Number(stops)
+            getFlightDetails(offer).stops ===
+            Number(stopsFilter)
         );
       }
     }
 
-    if (airline !== 'all') {
+    // Airline
+    if (airlineFilter !== 'all') {
       list = list.filter(
         (offer) =>
-          offer.owner?.name === airline
+          offer.owner?.name === airlineFilter
       );
     }
 
+    // Max price PER PASSENGER
     if (maxPrice) {
-      list = list.filter(
-        (offer) =>
-          Number(offer.total_amount) <=
-          Number(maxPrice)
-      );
+      list = list.filter((offer) => {
+        const total = Number(
+          offer.total_amount || 0
+        );
+
+        const perPassenger =
+          total / Math.max(passengerCount, 1);
+
+        return perPassenger <= Number(maxPrice);
+      });
     }
 
+    // Cheapest
     if (sort === 'price') {
-      list.sort(
-        (a, b) =>
-          Number(a.total_amount) -
-          Number(b.total_amount)
-      );
+      list.sort((a, b) => {
+        const priceA =
+          Number(a.total_amount || 0) /
+          Math.max(passengerCount, 1);
+
+        const priceB =
+          Number(b.total_amount || 0) /
+          Math.max(passengerCount, 1);
+
+        return priceA - priceB;
+      });
     }
 
+    // Fastest
     if (sort === 'duration') {
       list.sort(
         (a, b) =>
-          details(a).duration -
-          details(b).duration
+          getFlightDetails(a).duration -
+          getFlightDetails(b).duration
       );
     }
 
+    // Recommended
     if (sort === 'best') {
       list.sort((a, b) => {
-        const priceDifference =
-          Number(a.total_amount) -
-          Number(b.total_amount);
+        const priceA =
+          Number(a.total_amount || 0) /
+          Math.max(passengerCount, 1);
 
-        const stopDifference =
-          details(a).stops -
-          details(b).stops;
+        const priceB =
+          Number(b.total_amount || 0) /
+          Math.max(passengerCount, 1);
 
-        return (
-          priceDifference * 0.4 +
-          stopDifference * 20
-        );
+        const stopA =
+          getFlightDetails(a).stops;
+
+        const stopB =
+          getFlightDetails(b).stops;
+
+        const durationA =
+          getFlightDetails(a).duration;
+
+        const durationB =
+          getFlightDetails(b).duration;
+
+        const scoreA =
+          priceA +
+          stopA * 50 +
+          durationA * 0.05;
+
+        const scoreB =
+          priceB +
+          stopB * 50 +
+          durationB * 0.05;
+
+        return scoreA - scoreB;
       });
     }
 
     return list;
   }, [
     offers,
-    stops,
-    airline,
+    stopsFilter,
+    airlineFilter,
     maxPrice,
     sort,
+    passengerCount,
   ]);
+
+  // ------------------------------------
+  // SELECT FLIGHT
+  // ------------------------------------
 
   function selectFlight(offer) {
     const params = new URLSearchParams();
 
     params.set('offerId', offer.id);
 
-    // IMPORTANT:
-    // Passenger information is preserved
-    // when going from search → checkout.
+    params.set(
+      'adults',
+      String(adults)
+    );
 
-    const adults = sp.get('adults') || '1';
+    params.set(
+      'tripType',
+      searchParams.get('tripType') || 'oneway'
+    );
 
-    params.set('adults', adults);
-
-    const tripType =
-      sp.get('tripType') || 'oneway';
-
-    params.set('tripType', tripType);
-
-    const cabin =
-      sp.get('cabin') || 'economy';
-
-    params.set('cabin', cabin);
+    params.set(
+      'cabin',
+      searchParams.get('cabin') || 'economy'
+    );
 
     const returnDate =
-      sp.get('returnDate');
+      searchParams.get('returnDate');
 
     if (returnDate) {
-      params.set('returnDate', returnDate);
+      params.set(
+        'returnDate',
+        returnDate
+      );
     }
 
-    sp.getAll('childAge').forEach((age) => {
+    // Keep child ages
+    searchParams.getAll('childAge').forEach((age) => {
       if (age !== '') {
         params.append('childAge', age);
       }
@@ -277,6 +347,10 @@ function SearchContent() {
       `/checkout?${params.toString()}`
     );
   }
+
+  // ------------------------------------
+  // LOADING
+  // ------------------------------------
 
   if (loading) {
     return (
@@ -294,6 +368,10 @@ function SearchContent() {
     );
   }
 
+  // ------------------------------------
+  // PAGE
+  // ------------------------------------
+
   return (
     <main className="results-shell">
       <header className="site-header">
@@ -302,10 +380,14 @@ function SearchContent() {
           Trip Scanner <b>Hub</b>
         </div>
 
-        <button onClick={() => router.push('/')}>
+        <button
+          onClick={() => router.push('/')}
+        >
           ← Change search
         </button>
       </header>
+
+      {/* SEARCH SUMMARY */}
 
       <div className="results-top">
         <div>
@@ -314,28 +396,33 @@ function SearchContent() {
           </span>
 
           <h1>
-            {sp.get('origin')}
+            {searchParams.get('origin')}
             <span> → </span>
-            {sp.get('destination')}
+            {searchParams.get('destination')}
           </h1>
 
           <p>
-            {date(sp.get('departureDate'))}
+            {date(
+              searchParams.get(
+                'departureDate'
+              )
+            )}
 
-            {sp.get('tripType') === 'return' &&
+            {searchParams.get('tripType') ===
+              'return' &&
               ` · Return ${date(
-                sp.get('returnDate')
+                searchParams.get(
+                  'returnDate'
+                )
               )}`}
 
             {' · '}
 
-            {sp.get('adults') || 1} adult
-            {(Number(sp.get('adults') || 1) !== 1)
+            {passengerCount}{' '}
+            traveller
+            {passengerCount !== 1
               ? 's'
               : ''}
-
-            {sp.getAll('childAge').length > 0 &&
-              ` · ${sp.getAll('childAge').length} child`}
           </p>
         </div>
 
@@ -365,6 +452,9 @@ function SearchContent() {
         </div>
       ) : (
         <div className="results-layout">
+
+          {/* FILTERS */}
+
           <aside className="filters">
             <h3>Filter flights</h3>
 
@@ -372,9 +462,11 @@ function SearchContent() {
               Stops
 
               <select
-                value={stops}
+                value={stopsFilter}
                 onChange={(e) =>
-                  setStops(e.target.value)
+                  setStopsFilter(
+                    e.target.value
+                  )
                 }
               >
                 <option value="all">
@@ -399,9 +491,11 @@ function SearchContent() {
               Airline
 
               <select
-                value={airline}
+                value={airlineFilter}
                 onChange={(e) =>
-                  setAirline(e.target.value)
+                  setAirlineFilter(
+                    e.target.value
+                  )
                 }
               >
                 <option value="all">
@@ -419,37 +513,29 @@ function SearchContent() {
               </select>
             </label>
 
-            {highest > 0 && (
+            {offers.length > 0 && (
               <label>
-                Maximum price
+                Maximum price per passenger
 
                 <input
-                  type="range"
+                  type="number"
                   min="0"
-                  max={highest}
-                  value={
-                    maxPrice || highest
-                  }
+                  placeholder="e.g. 500"
+                  value={maxPrice}
                   onChange={(e) =>
-                    setMaxPrice(e.target.value)
+                    setMaxPrice(
+                      e.target.value
+                    )
                   }
                 />
-
-                <b>
-                  {money(
-                    maxPrice || highest,
-                    offers[0]
-                      ?.total_currency || 'GBP'
-                  )}
-                </b>
               </label>
             )}
 
             <button
               className="clear"
               onClick={() => {
-                setStops('all');
-                setAirline('all');
+                setStopsFilter('all');
+                setAirlineFilter('all');
                 setMaxPrice('');
               }}
             >
@@ -457,25 +543,40 @@ function SearchContent() {
             </button>
           </aside>
 
+          {/* RESULTS */}
+
           <section className="flight-list">
+
             <div className="result-count">
-              {filtered.length} flight option
-              {filtered.length !== 1
+              {filteredOffers.length}{' '}
+              flight option
+              {filteredOffers.length !== 1
                 ? 's'
                 : ''}
             </div>
 
-            {filtered.map(
-              (offer, index) => (
-                <FlightCard
-                  key={
-                    offer.id || index
-                  }
-                  offer={offer}
-                  onSelect={() =>
-                    selectFlight(offer)
-                  }
-                />
+            {filteredOffers.length === 0 ? (
+              <div className="loading-box">
+                No flights match your filters.
+              </div>
+            ) : (
+              filteredOffers.map(
+                (offer, index) => (
+                  <FlightCard
+                    key={
+                      offer.id || index
+                    }
+                    offer={offer}
+                    passengerCount={
+                      passengerCount
+                    }
+                    onSelect={() =>
+                      selectFlight(
+                        offer
+                      )
+                    }
+                  />
+                )
               )
             )}
           </section>
@@ -485,15 +586,39 @@ function SearchContent() {
   );
 }
 
+// ======================================
+// FLIGHT CARD
+// ======================================
+
 function FlightCard({
   offer,
+  passengerCount,
   onSelect,
 }) {
-  const d = details(offer);
+  const {
+    segments,
+    duration,
+    stops,
+  } = getFlightDetails(offer);
+
+  const totalPrice =
+    Number(
+      offer.total_amount || 0
+    );
+
+  // IMPORTANT:
+  // Search page shows PER PASSENGER
+  const perPassengerPrice =
+    totalPrice /
+    Math.max(passengerCount, 1);
 
   return (
     <article className="flight-result">
+
       <div className="flight-main">
+
+        {/* AIRLINE */}
+
         <div className="airline">
           <div className="logo-box">
             {offer.owner
@@ -517,16 +642,26 @@ function FlightCard({
             </b>
 
             <small>
-              {d.segs
-                .map((segment) =>
-                  segment
-                    .marketing_carrier
-                    ?.iata_code
-                    ? `${segment.marketing_carrier.iata_code} ${
-                        segment.marketing_carrier_flight_number ||
-                        ''
-                      }`
-                    : ''
+              {segments
+                .map(
+                  (segment) => {
+                    const code =
+                      segment
+                        .marketing_carrier
+                        ?.iata_code;
+
+                    const number =
+                      segment
+                        .marketing_carrier_flight_number;
+
+                    if (!code) {
+                      return '';
+                    }
+
+                    return `${code} ${
+                      number || ''
+                    }`;
+                  }
                 )
                 .filter(Boolean)
                 .join(' · ')}
@@ -534,13 +669,16 @@ function FlightCard({
           </div>
         </div>
 
+        {/* TIMINGS */}
+
         <div className="timeline">
-          {d.segs.map(
+          {segments.map(
             (segment, index) => (
               <div
                 className="leg"
                 key={index}
               >
+
                 <div>
                   <strong>
                     {time(
@@ -550,7 +688,8 @@ function FlightCard({
 
                   <span>
                     {
-                      segment.origin
+                      segment
+                        .origin
                         ?.iata_code
                     }
                   </span>
@@ -558,7 +697,7 @@ function FlightCard({
 
                 <div className="line">
                   <small>
-                    {dur(
+                    {durationText(
                       mins(
                         segment.departing_at,
                         segment.arriving_at
@@ -570,9 +709,9 @@ function FlightCard({
 
                   <small>
                     {index <
-                    d.segs.length - 1
-                      ? 'connection'
-                      : 'flight'}
+                    segments.length - 1
+                      ? 'Connection'
+                      : 'Flight'}
                   </small>
                 </div>
 
@@ -585,58 +724,97 @@ function FlightCard({
 
                   <span>
                     {
-                      segment.destination
+                      segment
+                        .destination
                         ?.iata_code
                     }
                   </span>
                 </div>
+
               </div>
             )
           )}
         </div>
 
+        {/* META */}
+
         <div className="flight-meta">
           <span>
-            {d.stops === 0
+            {stops === 0
               ? 'Direct'
-              : `${d.stops} stop${
-                  d.stops > 1
+              : `${stops} stop${
+                  stops > 1
                     ? 's'
                     : ''
                 }`}
           </span>
 
           <span>
-            {dur(d.duration)}
+            {durationText(
+              duration
+            )}
           </span>
 
           <span>
             🧳 Baggage varies by fare
           </span>
         </div>
+
       </div>
 
+      {/* PRICE */}
+
       <div className="price-box">
-        <small>From</small>
+
+        <small>
+          From
+        </small>
 
         <strong>
           {money(
-            offer.total_amount,
+            perPassengerPrice,
             offer.total_currency
           )}
         </strong>
 
         <span>
-          total for selected passengers
+          per passenger
         </span>
 
-        <button onClick={onSelect}>
+        <small
+          style={{
+            marginTop: '5px',
+            opacity: 0.7,
+          }}
+        >
+          {passengerCount}{' '}
+          traveller
+          {passengerCount !== 1
+            ? 's'
+            : ''}{' '}
+          ·{' '}
+          {money(
+            totalPrice,
+            offer.total_currency
+          )}{' '}
+          total
+        </small>
+
+        <button
+          onClick={onSelect}
+        >
           Select flight →
         </button>
+
       </div>
+
     </article>
   );
 }
+
+// ======================================
+// EXPORT
+// ======================================
 
 export default function Search() {
   return (
