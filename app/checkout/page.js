@@ -3,7 +3,6 @@
 import {
   Suspense,
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 
@@ -13,7 +12,7 @@ import {
 } from 'next/navigation';
 
 /* =========================================================
-   COUNTRY LIST
+   COUNTRIES
 ========================================================= */
 
 const COUNTRIES = [
@@ -240,14 +239,17 @@ function time(value) {
 }
 
 function flag(code) {
-  if (!code || code.length !== 2) return '🌐';
+  if (!code || code.length !== 2) {
+    return '🌐';
+  }
 
   return code
     .toUpperCase()
     .split('')
-    .map(
-      (char) =>
-        String.fromCodePoint(127397 + char.charCodeAt(0))
+    .map((char) =>
+      String.fromCodePoint(
+        127397 + char.charCodeAt(0)
+      )
     )
     .join('');
 }
@@ -255,7 +257,9 @@ function flag(code) {
 function parseDate(value) {
   if (!value) return null;
 
-  const date = new Date(`${value}T00:00:00`);
+  const date = new Date(
+    `${value}T00:00:00`
+  );
 
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -267,10 +271,13 @@ function parseDate(value) {
 function formatDateForInput(date) {
   if (!date) return '';
 
-  const year = date.getFullYear();
+  const year =
+    date.getFullYear();
+
   const month = String(
     date.getMonth() + 1
   ).padStart(2, '0');
+
   const day = String(
     date.getDate()
   ).padStart(2, '0');
@@ -280,24 +287,39 @@ function formatDateForInput(date) {
 
 function addYears(date, years) {
   const result = new Date(date);
+
   result.setFullYear(
     result.getFullYear() + years
   );
+
   return result;
 }
 
 function addMonths(date, months) {
   const result = new Date(date);
 
-  const originalDay = result.getDate();
+  const originalDay =
+    result.getDate();
 
   result.setMonth(
     result.getMonth() + months
   );
 
-  if (result.getDate() !== originalDay) {
+  if (
+    result.getDate() !== originalDay
+  ) {
     result.setDate(0);
   }
+
+  return result;
+}
+
+function addDays(date, days) {
+  const result = new Date(date);
+
+  result.setDate(
+    result.getDate() + days
+  );
 
   return result;
 }
@@ -306,8 +328,11 @@ function calculateAgeOnDate(
   dobString,
   targetDateString
 ) {
-  const dob = parseDate(dobString);
-  const target = parseDate(targetDateString);
+  const dob =
+    parseDate(dobString);
+
+  const target =
+    parseDate(targetDateString);
 
   if (!dob || !target) {
     return null;
@@ -327,8 +352,10 @@ function calculateAgeOnDate(
 
   if (
     monthDifference < 0 ||
-    (monthDifference === 0 &&
-      dayDifference < 0)
+    (
+      monthDifference === 0 &&
+      dayDifference < 0
+    )
   ) {
     age--;
   }
@@ -339,16 +366,20 @@ function calculateAgeOnDate(
 function getCountryByCode(code) {
   return (
     COUNTRIES.find(
-      (country) => country[0] === code
+      (country) =>
+        country[0] === code
     ) ||
     COUNTRIES.find(
-      (country) => country[0] === 'GB'
+      (country) =>
+        country[0] === 'GB'
     )
   );
 }
 
 function cleanPhoneNumber(value) {
-  return String(value || '').replace(
+  return String(
+    value || ''
+  ).replace(
     /[^\d]/g,
     ''
   );
@@ -359,27 +390,43 @@ function buildInternationalPhone(
   value
 ) {
   const country =
-    getCountryByCode(countryCode);
+    getCountryByCode(
+      countryCode
+    );
 
   if (!country) return '';
 
-  let number = cleanPhoneNumber(value);
+  let number =
+    cleanPhoneNumber(value);
 
   if (!number) return '';
 
   const callingCode =
-    country[2].replace('+', '');
+    country[2].replace(
+      '+',
+      ''
+    );
 
-  if (number.startsWith('00')) {
-    number = number.slice(2);
+  if (
+    number.startsWith('00')
+  ) {
+    number =
+      number.slice(2);
   }
 
-  if (number.startsWith(callingCode)) {
+  if (
+    number.startsWith(
+      callingCode
+    )
+  ) {
     return `+${number}`;
   }
 
-  if (number.startsWith('0')) {
-    number = number.slice(1);
+  if (
+    number.startsWith('0')
+  ) {
+    number =
+      number.slice(1);
   }
 
   return `+${callingCode}${number}`;
@@ -387,7 +434,7 @@ function buildInternationalPhone(
 
 function getPhoneError(contact) {
   if (!contact.phone_local) {
-    return '';
+    return 'Phone number is required.';
   }
 
   const formatted =
@@ -397,7 +444,10 @@ function getPhoneError(contact) {
     );
 
   const digits =
-    formatted.replace(/[^\d]/g, '');
+    formatted.replace(
+      /[^\d]/g,
+      ''
+    );
 
   if (digits.length < 8) {
     return 'Phone number is too short.';
@@ -411,14 +461,70 @@ function getPhoneError(contact) {
 }
 
 /* =========================================================
+   FIELD STYLES
+========================================================= */
+
+function fieldStyle(valid) {
+  return {
+    border:
+      valid
+        ? '2px solid #16a34a'
+        : '2px solid #dc2626',
+    background:
+      valid
+        ? '#f0fdf4'
+        : '#fff1f2',
+    transition:
+      'all 0.15s ease',
+  };
+}
+
+function validMessage() {
+  return (
+    <small
+      style={{
+        display: 'block',
+        marginTop: '5px',
+        color: '#16a34a',
+        fontWeight: '600',
+      }}
+    >
+      ✓ Correct
+    </small>
+  );
+}
+
+function errorMessage(message) {
+  if (!message) return null;
+
+  return (
+    <small
+      style={{
+        display: 'block',
+        marginTop: '5px',
+        color: '#dc2626',
+        fontWeight: '600',
+      }}
+    >
+      ⚠ {message}
+    </small>
+  );
+}
+
+/* =========================================================
    CHECKOUT CONTENT
 ========================================================= */
 
 function CheckoutContent() {
-  const router = useRouter();
-  const sp = useSearchParams();
+  const router =
+    useRouter();
 
-  const [offer, setOffer] = useState(null);
+  const sp =
+    useSearchParams();
+
+  const [offer, setOffer] =
+    useState(null);
+
   const [passengers, setPassengers] =
     useState([]);
 
@@ -432,26 +538,31 @@ function CheckoutContent() {
   const [error, setError] =
     useState('');
 
-  /* -------------------------------------------------------
+  /* =======================================================
      LOAD SEARCH DATA
-  ------------------------------------------------------- */
+  ======================================================= */
 
   useEffect(() => {
     const offerId =
       sp.get('offerId');
 
-    const adults = Math.max(
-      1,
-      Number(
-        sp.get('adults') || 1
-      )
-    );
+    const adults =
+      Math.max(
+        1,
+        Number(
+          sp.get('adults') || 1
+        )
+      );
 
     const childAges =
-      sp.getAll('childAge');
+      sp.getAll(
+        'childAge'
+      );
 
     const infantAges =
-      sp.getAll('infantAge');
+      sp.getAll(
+        'infantAge'
+      );
 
     const passengerList = [];
 
@@ -465,7 +576,7 @@ function CheckoutContent() {
       passengerList.push({
         type: 'adult',
         age: null,
-        title: 'mr',
+        title: '',
         given_name: '',
         family_name: '',
         born_on: '',
@@ -478,45 +589,49 @@ function CheckoutContent() {
 
     /* CHILDREN */
 
-    childAges.forEach((age) => {
-      if (age === '') return;
+    childAges.forEach(
+      (age) => {
+        if (age === '') return;
 
-      passengerList.push({
-        type: 'child',
-        age: Number(age),
-        title: 'mr',
-        given_name: '',
-        family_name: '',
-        born_on: '',
-        gender: 'm',
-        nationality: 'GB',
-        passport_number: '',
-        passport_expiry_date: '',
-      });
-    });
+        passengerList.push({
+          type: 'child',
+          age: Number(age),
+          title: '',
+          given_name: '',
+          family_name: '',
+          born_on: '',
+          gender: 'm',
+          nationality: 'GB',
+          passport_number: '',
+          passport_expiry_date: '',
+        });
+      }
+    );
 
     /* INFANTS */
 
-    infantAges.forEach((age) => {
-      if (age === '') return;
+    infantAges.forEach(
+      (age) => {
+        if (age === '') return;
 
-      passengerList.push({
-        type: 'infant',
-        age: Number(age),
-        title: 'mr',
-        given_name: '',
-        family_name: '',
-        born_on: '',
-        gender: 'm',
-        nationality: 'GB',
-        passport_number: '',
-        passport_expiry_date: '',
-      });
-    });
+        passengerList.push({
+          type: 'infant',
+          age: Number(age),
+          title: '',
+          given_name: '',
+          family_name: '',
+          born_on: '',
+          gender: 'm',
+          nationality: 'GB',
+          passport_number: '',
+          passport_expiry_date: '',
+        });
+      }
+    );
 
-    setPassengers(passengerList);
-
-    /* LOAD OFFER */
+    setPassengers(
+      passengerList
+    );
 
     if (offerId) {
       fetch(
@@ -524,19 +639,24 @@ function CheckoutContent() {
           offerId
         )}`
       )
-        .then((response) =>
-          response.json()
+        .then(
+          (response) =>
+            response.json()
         )
-        .then((data) => {
-          if (data.offer) {
-            setOffer(data.offer);
-          } else {
-            setError(
-              data.error ||
-                'Unable to load flight.'
-            );
+        .then(
+          (data) => {
+            if (data.offer) {
+              setOffer(
+                data.offer
+              );
+            } else {
+              setError(
+                data.error ||
+                  'Unable to load flight.'
+              );
+            }
           }
-        })
+        )
         .catch(() => {
           setError(
             'Unable to load flight.'
@@ -545,89 +665,138 @@ function CheckoutContent() {
     }
   }, [sp]);
 
-  /* -------------------------------------------------------
+  /* =======================================================
      DEPARTURE DATE
-     First use URL, otherwise derive from Duffel offer.
-  ------------------------------------------------------- */
+  ======================================================= */
 
   const departureDate =
-    sp.get('departureDate') ||
-    offer?.slices?.[0]?.segments?.[0]
+    sp.get(
+      'departureDate'
+    ) ||
+    offer?.slices?.[0]
+      ?.segments?.[0]
       ?.departing_at
       ?.slice(0, 10) ||
     '';
 
-  /* -------------------------------------------------------
-     PASSENGER UPDATE
-  ------------------------------------------------------- */
+  /* =======================================================
+     DOB LIMITS
+  ======================================================= */
 
-  function updatePassenger(
-    index,
-    field,
-    value
+  function getDobLimits(
+    passenger
   ) {
-    setPassengers((current) =>
-      current.map(
-        (passenger, i) =>
-          i === index
-            ? {
-                ...passenger,
-                [field]: value,
-              }
-            : passenger
-      )
-    );
+    if (!departureDate) {
+      return {
+        min: undefined,
+        max: undefined,
+      };
+    }
 
-    setError('');
-  }
-
-  /* -------------------------------------------------------
-     CONTACT UPDATE
-  ------------------------------------------------------- */
-
-  function updateContact(
-    field,
-    value
-  ) {
-    setContact((current) => ({
-      ...current,
-      [field]: value,
-    }));
-
-    setError('');
-  }
-
-  function updatePhoneCountry(
-    countryCode
-  ) {
-    setContact((current) => ({
-      ...current,
-      phone_country: countryCode,
-      phone_local: '',
-    }));
-
-    setError('');
-  }
-
-  function updatePhoneNumber(
-    value
-  ) {
-    const clean =
-      String(value || '').replace(
-        /[^\d]/g,
-        ''
+    const departure =
+      parseDate(
+        departureDate
       );
 
-    setContact((current) => ({
-      ...current,
-      phone_local: clean,
-    }));
+    if (!departure) {
+      return {
+        min: undefined,
+        max: undefined,
+      };
+    }
 
-    setError('');
+    /* ADULT 18+ */
+
+    if (
+      passenger.type ===
+      'adult'
+    ) {
+      const min =
+        addYears(
+          departure,
+          -100
+        );
+
+      const max =
+        addYears(
+          departure,
+          -18
+        );
+
+      return {
+        min:
+          formatDateForInput(
+            min
+          ),
+        max:
+          formatDateForInput(
+            max
+          ),
+      };
+    }
+
+    /* CHILD / INFANT EXACT AGE */
+
+    const selectedAge =
+      Number(
+        passenger.age
+      );
+
+    const max =
+      addYears(
+        departure,
+        -selectedAge
+      );
+
+    const min =
+      addDays(
+        addYears(
+          departure,
+          -(selectedAge + 1)
+        ),
+        1
+      );
+
+    return {
+      min:
+        formatDateForInput(
+          min
+        ),
+      max:
+        formatDateForInput(
+          max
+        ),
+    };
   }
 
   /* =======================================================
-     DOB VALIDATION
+     PASSPORT EXPIRY MIN
+  ======================================================= */
+
+  function getPassportExpiryMin() {
+    if (!departureDate) {
+      return undefined;
+    }
+
+    const departure =
+      parseDate(
+        departureDate
+      );
+
+    if (!departure) {
+      return undefined;
+    }
+
+    return formatDateForInput(
+      addMonths(
+        departure,
+        6
+      )
+    );
+  }
+
+  /* =======================================================
+     DOB ERROR
   ======================================================= */
 
   function getDobError(
@@ -635,7 +804,7 @@ function CheckoutContent() {
     index
   ) {
     if (!passenger.born_on) {
-      return '';
+      return 'Date of birth is required.';
     }
 
     if (!departureDate) {
@@ -653,15 +822,42 @@ function CheckoutContent() {
       );
 
     if (!dob || !departure) {
-      return `Invalid date of birth for Passenger ${
-        index + 1
-      }.`;
+      return 'Invalid date of birth.';
     }
 
-    if (dob >= departure) {
-      return `Passenger ${
-        index + 1
-      }'s date of birth must be before the departure date.`;
+    const limits =
+      getDobLimits(
+        passenger
+      );
+
+    if (
+      limits.min &&
+      passenger.born_on <
+        limits.min
+    ) {
+      if (
+        passenger.type ===
+        'adult'
+      ) {
+        return 'Passenger must not be older than 100 years.';
+      }
+
+      return `Passenger must be exactly ${passenger.age} years old on departure.`;
+    }
+
+    if (
+      limits.max &&
+      passenger.born_on >
+        limits.max
+    ) {
+      if (
+        passenger.type ===
+        'adult'
+      ) {
+        return 'Passenger must be at least 18 years old on departure.';
+      }
+
+      return `Passenger must be exactly ${passenger.age} years old on departure.`;
     }
 
     const age =
@@ -675,50 +871,52 @@ function CheckoutContent() {
         'adult' &&
       age < 18
     ) {
-      return `Passenger ${
-        index + 1
-      } must be at least 18 years old on the departure date.`;
+      return 'Passenger must be at least 18 years old on departure.';
     }
 
     if (
       passenger.type ===
         'child' &&
-      age !== Number(passenger.age)
+      age !==
+        Number(
+          passenger.age
+        )
     ) {
-      return `Passenger ${
-        index + 1
-      } must be exactly ${
-        passenger.age
-      } years old on the departure date.`;
+      return `Passenger must be exactly ${passenger.age} years old on departure.`;
     }
 
     if (
       passenger.type ===
         'infant' &&
-      age !== Number(passenger.age)
+      age !==
+        Number(
+          passenger.age
+        )
     ) {
-      return `Passenger ${
-        index + 1
-      } must be exactly ${
-        passenger.age
-      } years old on the departure date.`;
+      return `Passenger must be exactly ${passenger.age} years old on departure.`;
     }
 
     return '';
   }
 
   /* =======================================================
-     PASSPORT VALIDATION
+     PASSPORT ERROR
   ======================================================= */
 
   function getPassportError(
-    passenger,
-    index
+    passenger
   ) {
+    if (
+      !passenger.passport_number
+        .trim()
+    ) {
+      return 'Passport number is required.';
+    }
+
     if (
       !passenger.passport_expiry_date
     ) {
-      return '';
+      return 'Passport expiry is required.';
     }
 
     const expiry =
@@ -727,12 +925,12 @@ function CheckoutContent() {
       );
 
     if (!expiry) {
-      return `Invalid passport expiry date for Passenger ${
-        index + 1
-      }.`;
+      return 'Invalid passport expiry date.';
     }
 
-    if (passenger.born_on) {
+    if (
+      passenger.born_on
+    ) {
       const dob =
         parseDate(
           passenger.born_on
@@ -742,115 +940,224 @@ function CheckoutContent() {
         dob &&
         expiry <= dob
       ) {
-        return `Passport expiry date for Passenger ${
-          index + 1
-        } must be after the date of birth.`;
+        return 'Passport expiry must be after date of birth.';
       }
     }
 
-    if (departureDate) {
-      const departure =
-        parseDate(
-          departureDate
-        );
+    const minimumExpiry =
+      getPassportExpiryMin();
 
-      if (departure) {
-        const minimumExpiry =
-          addMonths(
-            departure,
-            6
-          );
-
-        if (
-          expiry <
-          minimumExpiry
-        ) {
-          return `Passport expiry for Passenger ${
-            index + 1
-          } must be at least 6 months after departure (${formatDateForInput(
-            minimumExpiry
-          )} or later).`;
-        }
-      }
+    if (
+      minimumExpiry &&
+      passenger.passport_expiry_date <
+        minimumExpiry
+    ) {
+      return `Passport must be valid for at least 6 months after departure (${minimumExpiry} or later).`;
     }
 
     return '';
   }
 
   /* =======================================================
-     PASSENGER VALIDATION
+     PASSENGER VALID
   ======================================================= */
 
-  function validatePassengers() {
-    for (
-      let i = 0;
-      i < passengers.length;
-      i++
+  function passengerIsValid(
+    passenger,
+    index
+  ) {
+    if (
+      !passenger.title
     ) {
-      const passenger =
-        passengers[i];
+      return false;
+    }
 
-      if (
-        !passenger.title
-      ) {
-        return `Please select a title for Passenger ${
-          i + 1
-        }.`;
-      }
+    if (
+      !passenger.given_name.trim()
+    ) {
+      return false;
+    }
 
-      if (
-        !passenger.given_name.trim()
-      ) {
-        return `Please enter first name for Passenger ${
-          i + 1
-        }.`;
-      }
+    if (
+      !passenger.family_name.trim()
+    ) {
+      return false;
+    }
 
-      if (
-        !passenger.family_name.trim()
-      ) {
-        return `Please enter last name for Passenger ${
-          i + 1
-        }.`;
-      }
+    if (
+      getDobError(
+        passenger,
+        index
+      )
+    ) {
+      return false;
+    }
 
-      if (!passenger.born_on) {
-        return `Please enter date of birth for Passenger ${
-          i + 1
-        }.`;
-      }
+    if (
+      !passenger.gender
+    ) {
+      return false;
+    }
 
-      const dobError =
-        getDobError(
-          passenger,
-          i
-        );
+    if (
+      !passenger.nationality
+    ) {
+      return false;
+    }
 
-      if (dobError) {
-        return dobError;
-      }
+    if (
+      getPassportError(
+        passenger
+      )
+    ) {
+      return false;
+    }
 
-      const passportError =
-        getPassportError(
-          passenger,
-          i
-        );
+    return true;
+  }
 
-      if (passportError) {
-        return passportError;
-      }
+  /* =======================================================
+     EMAIL VALIDATION
+  ======================================================= */
 
-      if (
-        !passenger.nationality
-      ) {
-        return `Please select nationality for Passenger ${
-          i + 1
-        }.`;
-      }
+  function getEmailError() {
+    const email =
+      contact.email.trim();
+
+    if (!email) {
+      return 'Email address is required.';
+    }
+
+    const emailPattern =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (
+      !emailPattern.test(
+        email
+      )
+    ) {
+      return 'Enter a valid email address.';
     }
 
     return '';
   }
+
+  /* =======================================================
+     UPDATE PASSENGER
+  ======================================================= */
+
+  function updatePassenger(
+    index,
+    field,
+    value
+  ) {
+    setPassengers(
+      (current) =>
+        current.map(
+          (
+            passenger,
+            i
+          ) =>
+            i === index
+              ? {
+                  ...passenger,
+                  [field]:
+                    value,
+                }
+              : passenger
+        )
+    );
+
+    setError('');
+  }
+
+  /* =======================================================
+     CONTACT
+  ======================================================= */
+
+  function updateContact(
+    field,
+    value
+  ) {
+    setContact(
+      (current) => ({
+        ...current,
+        [field]: value,
+      })
+    );
+
+    setError('');
+  }
+
+  function updatePhoneCountry(
+    countryCode
+  ) {
+    setContact(
+      (current) => ({
+        ...current,
+        phone_country:
+          countryCode,
+        phone_local: '',
+      })
+    );
+
+    setError('');
+  }
+
+  function updatePhoneNumber(
+    value
+  ) {
+    const clean =
+      String(
+        value || ''
+      ).replace(
+        /[^\d]/g,
+        ''
+      );
+
+    setContact(
+      (current) => ({
+        ...current,
+        phone_local:
+          clean,
+      })
+    );
+
+    setError('');
+  }
+
+  /* =======================================================
+     OVERALL VALIDATION
+  ======================================================= */
+
+  const allPassengersValid =
+    passengers.length > 0 &&
+    passengers.every(
+      (
+        passenger,
+        index
+      ) =>
+        passengerIsValid(
+          passenger,
+          index
+        )
+    );
+
+  const emailError =
+    getEmailError();
+
+  const phoneError =
+    getPhoneError(
+      contact
+    );
+
+  const contactValid =
+    !emailError &&
+    !phoneError;
+
+  const formIsValid =
+    allPassengersValid &&
+    contactValid;
 
   /* =======================================================
      SUBMIT
@@ -861,34 +1168,9 @@ function CheckoutContent() {
 
     setError('');
 
-    /* Passenger validation */
-
-    const passengerError =
-      validatePassengers();
-
-    if (passengerError) {
+    if (!formIsValid) {
       setError(
-        passengerError
-      );
-      return;
-    }
-
-    /* Email */
-
-    if (
-      !contact.email.trim()
-    ) {
-      setError(
-        'Please enter the contact email address.'
-      );
-      return;
-    }
-
-    /* Phone */
-
-    if (!contact.phone_local) {
-      setError(
-        'Please enter the contact phone number.'
+        'Please complete all required passenger and contact details correctly.'
       );
       return;
     }
@@ -899,35 +1181,12 @@ function CheckoutContent() {
         contact.phone_local
       );
 
-    const phoneError =
-      getPhoneError(contact);
-
-    if (
-      phoneError
-    ) {
-      setError(
-        phoneError
-      );
-      return;
-    }
-
-    if (!phoneNumber) {
-      setError(
-        'Please enter a valid phone number.'
-      );
-      return;
-    }
-
-    /* Save passenger details */
-
     sessionStorage.setItem(
       'tripScannerPassengers',
       JSON.stringify(
         passengers
       )
     );
-
-    /* Save contact details in E.164 */
 
     sessionStorage.setItem(
       'tripScannerContact',
@@ -939,18 +1198,16 @@ function CheckoutContent() {
       })
     );
 
-    /* Save offer ID */
-
     sessionStorage.setItem(
       'tripScannerOfferId',
-      sp.get('offerId') || ''
+      sp.get('offerId') ||
+        ''
     );
-
-    /* Continue */
 
     router.push(
       `/payment?offerId=${encodeURIComponent(
-        sp.get('offerId') || ''
+        sp.get('offerId') ||
+          ''
       )}`
     );
   }
@@ -973,6 +1230,7 @@ function CheckoutContent() {
     <main className="checkout-shell">
 
       <header className="site-header">
+
         <div className="brand">
           ✈ Trip Scanner <b>Hub</b>
         </div>
@@ -980,6 +1238,7 @@ function CheckoutContent() {
         <span>
           Passenger details
         </span>
+
       </header>
 
       <div className="checkout-grid">
@@ -987,8 +1246,14 @@ function CheckoutContent() {
         <section>
 
           <div className="stepbar">
-            <b>1 Passenger</b>
-            <span>2 Payment</span>
+            <b>
+              1 Passenger
+            </b>
+
+            <span>
+              2 Payment
+            </span>
+
             <span>
               3 Confirmation
             </span>
@@ -1026,6 +1291,11 @@ function CheckoutContent() {
                 index
               ) => {
 
+                const dobLimits =
+                  getDobLimits(
+                    passenger
+                  );
+
                 const dobError =
                   getDobError(
                     passenger,
@@ -1034,9 +1304,33 @@ function CheckoutContent() {
 
                 const passportError =
                   getPassportError(
-                    passenger,
-                    index
+                    passenger
                   );
+
+                const titleValid =
+                  !!passenger.title;
+
+                const firstNameValid =
+                  !!passenger.given_name.trim();
+
+                const lastNameValid =
+                  !!passenger.family_name.trim();
+
+                const dobValid =
+                  !dobError;
+
+                const genderValid =
+                  !!passenger.gender;
+
+                const nationalityValid =
+                  !!passenger.nationality;
+
+                const passportNumberValid =
+                  !!passenger.passport_number.trim();
+
+                const passportExpiryValid =
+                  !!passenger.passport_expiry_date &&
+                  !passportError;
 
                 return (
                   <div
@@ -1096,6 +1390,9 @@ function CheckoutContent() {
                               e.target.value
                             )
                           }
+                          style={fieldStyle(
+                            titleValid
+                          )}
                           required
                         >
                           <option value="">
@@ -1118,6 +1415,12 @@ function CheckoutContent() {
                             Miss
                           </option>
                         </select>
+
+                        {titleValid
+                          ? validMessage()
+                          : errorMessage(
+                              'Title is required.'
+                            )}
                       </label>
 
                       {/* FIRST NAME */}
@@ -1137,8 +1440,17 @@ function CheckoutContent() {
                               e.target.value
                             )
                           }
+                          style={fieldStyle(
+                            firstNameValid
+                          )}
                           required
                         />
+
+                        {firstNameValid
+                          ? validMessage()
+                          : errorMessage(
+                              'First name is required.'
+                            )}
                       </label>
 
                       {/* LAST NAME */}
@@ -1158,8 +1470,17 @@ function CheckoutContent() {
                               e.target.value
                             )
                           }
+                          style={fieldStyle(
+                            lastNameValid
+                          )}
                           required
                         />
+
+                        {lastNameValid
+                          ? validMessage()
+                          : errorMessage(
+                              'Last name is required.'
+                            )}
                       </label>
 
                       {/* DOB */}
@@ -1172,9 +1493,11 @@ function CheckoutContent() {
                           value={
                             passenger.born_on
                           }
+                          min={
+                            dobLimits.min
+                          }
                           max={
-                            departureDate ||
-                            undefined
+                            dobLimits.max
                           }
                           onChange={(e) =>
                             updatePassenger(
@@ -1183,31 +1506,42 @@ function CheckoutContent() {
                               e.target.value
                             )
                           }
+                          style={fieldStyle(
+                            dobValid
+                          )}
                           required
                         />
 
-                        {dobError && (
-                          <small
-                            style={{
-                              display:
-                                'block',
-                              marginTop:
-                                '6px',
-                              color:
-                                '#dc2626',
-                              fontWeight:
-                                '600',
-                            }}
-                          >
-                            ⚠ {dobError}
-                          </small>
-                        )}
+                        {dobValid
+                          ? validMessage()
+                          : errorMessage(
+                              dobError
+                            )}
+
+                        {dobLimits.min &&
+                          dobLimits.max && (
+                            <small
+                              style={{
+                                display:
+                                  'block',
+                                marginTop:
+                                  '5px',
+                                color:
+                                  '#64748b',
+                              }}
+                            >
+                              {passenger.type ===
+                              'adult'
+                                ? `Allowed DOB: ${dobLimits.min} to ${dobLimits.max}`
+                                : `Age ${passenger.age}: ${dobLimits.min} to ${dobLimits.max}`}
+                            </small>
+                          )}
                       </label>
 
                       {/* GENDER */}
 
                       <label>
-                        Gender
+                        Gender *
 
                         <select
                           value={
@@ -1220,6 +1554,10 @@ function CheckoutContent() {
                               e.target.value
                             )
                           }
+                          style={fieldStyle(
+                            genderValid
+                          )}
+                          required
                         >
                           <option value="m">
                             Male
@@ -1229,6 +1567,12 @@ function CheckoutContent() {
                             Female
                           </option>
                         </select>
+
+                        {genderValid
+                          ? validMessage()
+                          : errorMessage(
+                              'Gender is required.'
+                            )}
                       </label>
 
                       {/* NATIONALITY */}
@@ -1247,6 +1591,9 @@ function CheckoutContent() {
                               e.target.value
                             )
                           }
+                          style={fieldStyle(
+                            nationalityValid
+                          )}
                           required
                         >
                           <option value="">
@@ -1277,12 +1624,18 @@ function CheckoutContent() {
                             )
                           )}
                         </select>
+
+                        {nationalityValid
+                          ? validMessage()
+                          : errorMessage(
+                              'Nationality is required.'
+                            )}
                       </label>
 
                       {/* PASSPORT NUMBER */}
 
                       <label>
-                        Passport number
+                        Passport number *
 
                         <input
                           type="text"
@@ -1296,14 +1649,24 @@ function CheckoutContent() {
                               e.target.value.toUpperCase()
                             )
                           }
+                          style={fieldStyle(
+                            passportNumberValid
+                          )}
                           placeholder="Passport number"
+                          required
                         />
+
+                        {passportNumberValid
+                          ? validMessage()
+                          : errorMessage(
+                              'Passport number is required.'
+                            )}
                       </label>
 
                       {/* PASSPORT EXPIRY */}
 
                       <label>
-                        Passport expiry
+                        Passport expiry *
 
                         <input
                           type="date"
@@ -1311,16 +1674,7 @@ function CheckoutContent() {
                             passenger.passport_expiry_date
                           }
                           min={
-                            departureDate
-                              ? formatDateForInput(
-                                  addMonths(
-                                    parseDate(
-                                      departureDate
-                                    ),
-                                    6
-                                  )
-                                )
-                              : undefined
+                            getPassportExpiryMin()
                           }
                           onChange={(e) =>
                             updatePassenger(
@@ -1329,24 +1683,32 @@ function CheckoutContent() {
                               e.target.value
                             )
                           }
+                          style={fieldStyle(
+                            passportExpiryValid
+                          )}
+                          required
                         />
 
-                        {passportError && (
+                        {passportExpiryValid
+                          ? validMessage()
+                          : errorMessage(
+                              passportError
+                            )}
+
+                        {getPassportExpiryMin() && (
                           <small
                             style={{
                               display:
                                 'block',
                               marginTop:
-                                '6px',
+                                '5px',
                               color:
-                                '#dc2626',
-                              fontWeight:
-                                '600',
+                                '#64748b',
                             }}
                           >
-                            ⚠{' '}
+                            Minimum expiry:{' '}
                             {
-                              passportError
+                              getPassportExpiryMin()
                             }
                           </small>
                         )}
@@ -1409,8 +1771,17 @@ function CheckoutContent() {
                         e.target.value
                       )
                     }
+                    style={fieldStyle(
+                      !emailError
+                    )}
                     required
                   />
+
+                  {!emailError
+                    ? validMessage()
+                    : errorMessage(
+                        emailError
+                      )}
                 </label>
 
                 {/* PHONE */}
@@ -1435,7 +1806,7 @@ function CheckoutContent() {
                     }}
                   >
 
-                    {/* COUNTRY */}
+                    {/* PHONE COUNTRY */}
 
                     <select
                       value={
@@ -1446,6 +1817,9 @@ function CheckoutContent() {
                           e.target.value
                         )
                       }
+                      style={fieldStyle(
+                        !phoneError
+                      )}
                       required
                     >
                       {COUNTRIES.map(
@@ -1472,7 +1846,7 @@ function CheckoutContent() {
                       )}
                     </select>
 
-                    {/* LOCAL PHONE */}
+                    {/* PHONE NUMBER */}
 
                     <input
                       type="tel"
@@ -1486,52 +1860,33 @@ function CheckoutContent() {
                           e.target.value
                         )
                       }
+                      style={fieldStyle(
+                        !phoneError
+                      )}
                       required
                     />
 
                   </div>
 
-                  {contact.phone_local &&
-                    getPhoneError(
-                      contact
-                    ) && (
-                      <small
-                        style={{
-                          display:
-                            'block',
-                          marginTop:
-                            '6px',
-                          color:
-                            '#dc2626',
-                          fontWeight:
-                            '600',
-                        }}
-                      >
-                        ⚠{' '}
-                        {
-                          getPhoneError(
-                            contact
-                          )
-                        }
-                      </small>
-                    )}
+                  {!phoneError
+                    ? validMessage()
+                    : errorMessage(
+                        phoneError
+                      )}
 
                   {contact.phone_local &&
-                    !getPhoneError(
-                      contact
-                    ) && (
+                    !phoneError && (
                       <small
                         style={{
                           display:
                             'block',
                           marginTop:
-                            '6px',
+                            '5px',
                           color:
                             '#64748b',
                         }}
                       >
-                        Saved as international
-                        format:{' '}
+                        International format:{' '}
                         {buildInternationalPhone(
                           contact.phone_country,
                           contact.phone_local
@@ -1544,18 +1899,62 @@ function CheckoutContent() {
             </div>
 
             {/* =================================================
+                VALIDATION STATUS
+            ================================================== */}
+
+            <div
+              style={{
+                marginTop:
+                  '20px',
+                padding:
+                  '14px 16px',
+                borderRadius:
+                  '12px',
+                border:
+                  formIsValid
+                    ? '1px solid #86efac'
+                    : '1px solid #fecaca',
+                background:
+                  formIsValid
+                    ? '#f0fdf4'
+                    : '#fff1f2',
+                color:
+                  formIsValid
+                    ? '#166534'
+                    : '#991b1b',
+                fontWeight:
+                  '600',
+              }}
+            >
+              {formIsValid
+                ? '✓ All passenger and contact details are correct.'
+                : '⚠ Please complete all required fields correctly before continuing.'}
+            </div>
+
+            {/* =================================================
                 CONTINUE
             ================================================== */}
 
             <button
               type="submit"
               className="primary wide"
+              disabled={!formIsValid}
               style={{
                 marginTop:
                   '24px',
+                opacity:
+                  formIsValid
+                    ? 1
+                    : 0.5,
+                cursor:
+                  formIsValid
+                    ? 'pointer'
+                    : 'not-allowed',
               }}
             >
-              Continue to payment →
+              {formIsValid
+                ? 'Continue to payment →'
+                : 'Complete details to continue'}
             </button>
 
           </form>
@@ -1585,6 +1984,7 @@ function CheckoutContent() {
                   {time(
                     segment.departing_at
                   )}{' '}
+
                   {
                     segment.origin
                       ?.iata_code
@@ -1595,6 +1995,7 @@ function CheckoutContent() {
                   {time(
                     segment.arriving_at
                   )}{' '}
+
                   {
                     segment.destination
                       ?.iata_code
@@ -1611,7 +2012,8 @@ function CheckoutContent() {
                   {' · '}
 
                   {
-                    segment.marketing_carrier_flight_number
+                    segment
+                      .marketing_carrier_flight_number
                   }
                 </small>
 
