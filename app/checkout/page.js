@@ -11,11 +11,8 @@ import {
   useSearchParams,
 } from 'next/navigation';
 
-import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
-
 /* =========================================================
-   COUNTRY LIST
+   COUNTRIES
 ========================================================= */
 
 const COUNTRIES = [
@@ -217,24 +214,54 @@ const COUNTRIES = [
 ];
 
 /* =========================================================
+   FLAG
+========================================================= */
+
+function flag(code) {
+  if (!code || code.length !== 2) {
+    return '🌍';
+  }
+
+  return code
+    .toUpperCase()
+    .split('')
+    .map(
+      (char) =>
+        String.fromCodePoint(
+          127397 +
+            char.charCodeAt(0)
+        )
+    )
+    .join('');
+}
+
+/* =========================================================
    HELPERS
 ========================================================= */
 
 function money(amount, currency) {
   try {
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: currency || 'GBP',
-    }).format(Number(amount));
+    return new Intl.NumberFormat(
+      'en-GB',
+      {
+        style: 'currency',
+        currency:
+          currency || 'GBP',
+      }
+    ).format(Number(amount));
   } catch {
-    return `${currency || 'GBP'} ${amount}`;
+    return `${
+      currency || 'GBP'
+    } ${amount}`;
   }
 }
 
 function time(value) {
   if (!value) return '—';
 
-  return new Date(value).toLocaleTimeString(
+  return new Date(
+    value
+  ).toLocaleTimeString(
     'en-GB',
     {
       hour: '2-digit',
@@ -246,15 +273,18 @@ function time(value) {
 function parseDate(value) {
   if (!value) return null;
 
-  const parts = value
-    .split('-')
-    .map(Number);
+  const parts =
+    value.split('-').map(Number);
 
   if (parts.length !== 3) {
     return null;
   }
 
-  const [year, month, day] = parts;
+  const [
+    year,
+    month,
+    day,
+  ] = parts;
 
   const date = new Date(
     year,
@@ -263,8 +293,10 @@ function parseDate(value) {
   );
 
   if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
+    date.getFullYear() !==
+      year ||
+    date.getMonth() !==
+      month - 1 ||
     date.getDate() !== day
   ) {
     return null;
@@ -290,34 +322,46 @@ function formatDateInput(date) {
   return `${year}-${month}-${day}`;
 }
 
-function addYears(date, years) {
+function addYears(
+  date,
+  years
+) {
   const result =
     new Date(date);
 
   result.setFullYear(
-    result.getFullYear() + years
+    result.getFullYear() +
+      years
   );
 
   return result;
 }
 
-function addMonths(date, months) {
+function addMonths(
+  date,
+  months
+) {
   const result =
     new Date(date);
 
   result.setMonth(
-    result.getMonth() + months
+    result.getMonth() +
+      months
   );
 
   return result;
 }
 
-function addDays(date, days) {
+function addDays(
+  date,
+  days
+) {
   const result =
     new Date(date);
 
   result.setDate(
-    result.getDate() + days
+    result.getDate() +
+      days
   );
 
   return result;
@@ -364,7 +408,9 @@ function getDobLimits(
   departureDate
 ) {
   const departure =
-    parseDate(departureDate);
+    parseDate(
+      departureDate
+    );
 
   if (!departure) {
     return {
@@ -398,7 +444,9 @@ function getDobLimits(
   }
 
   const age =
-    Number(passenger.age);
+    Number(
+      passenger.age
+    );
 
   const max =
     addYears(
@@ -427,7 +475,9 @@ function getPassportExpiryMin(
   departureDate
 ) {
   const departure =
-    parseDate(departureDate);
+    parseDate(
+      departureDate
+    );
 
   if (!departure) {
     return '';
@@ -442,7 +492,101 @@ function getPassportExpiryMin(
 }
 
 /* =========================================================
-   MAIN CHECKOUT
+   PHONE HELPERS
+========================================================= */
+
+function getCountryByCode(
+  code
+) {
+  return (
+    COUNTRIES.find(
+      (country) =>
+        country[0] === code
+    ) || COUNTRIES.find(
+      (country) =>
+        country[0] === 'GB'
+    )
+  );
+}
+
+function cleanPhoneNumber(
+  value
+) {
+  return value.replace(
+    /[^\d]/g,
+    ''
+  );
+}
+
+function buildInternationalPhone(
+  countryCode,
+  value
+) {
+  const country =
+    getCountryByCode(
+      countryCode
+    );
+
+  if (!country) {
+    return '';
+  }
+
+  let number =
+    cleanPhoneNumber(value);
+
+  const callingCode =
+    country[2].replace(
+      '+',
+      ''
+    );
+
+  /*
+    If user enters:
+    07123456789
+
+    with UK selected:
+
+    +44 7123456789
+  */
+
+  if (
+    number.startsWith('00')
+  ) {
+    number =
+      number.slice(2);
+  }
+
+  /*
+    If number already starts
+    with country calling code,
+    don't add it twice.
+  */
+
+  if (
+    number.startsWith(
+      callingCode
+    )
+  ) {
+    return `+${number}`;
+  }
+
+  /*
+    Remove leading zero
+    for local numbers.
+  */
+
+  if (
+    number.startsWith('0')
+  ) {
+    number =
+      number.slice(1);
+  }
+
+  return `+${callingCode}${number}`;
+}
+
+/* =========================================================
+   CHECKOUT CONTENT
 ========================================================= */
 
 function CheckoutContent() {
@@ -455,12 +599,15 @@ function CheckoutContent() {
   const [offer, setOffer] =
     useState(null);
 
-  const [passengers, setPassengers] =
-    useState([]);
+  const [
+    passengers,
+    setPassengers,
+  ] = useState([]);
 
   const [contact, setContact] =
     useState({
       email: '',
+      phone_country: 'GB',
       phone_number: '',
     });
 
@@ -468,7 +615,7 @@ function CheckoutContent() {
     useState('');
 
   /* =======================================================
-     LOAD PASSENGERS
+     LOAD
   ======================================================= */
 
   useEffect(() => {
@@ -493,9 +640,11 @@ function CheckoutContent() {
         'infantAge'
       );
 
-    const passengerList = [];
+    const passengerList =
+      [];
 
-    // ADULTS
+    /* ADULTS */
+
     for (
       let i = 0;
       i < adults;
@@ -521,7 +670,8 @@ function CheckoutContent() {
       });
     }
 
-    // CHILDREN
+    /* CHILDREN */
+
     childAges.forEach(
       (age) => {
         if (age === '') {
@@ -549,7 +699,8 @@ function CheckoutContent() {
       }
     );
 
-    // INFANTS
+    /* INFANTS */
+
     infantAges.forEach(
       (age) => {
         if (age === '') {
@@ -614,7 +765,7 @@ function CheckoutContent() {
   }, [sp]);
 
   /* =======================================================
-     PASSENGER UPDATE
+     UPDATE PASSENGER
   ======================================================= */
 
   function updatePassenger(
@@ -641,7 +792,43 @@ function CheckoutContent() {
   }
 
   /* =======================================================
-     CONTACT UPDATE
+     PHONE
+  ======================================================= */
+
+  function updatePhoneCountry(
+    countryCode
+  ) {
+    setContact(
+      (current) => ({
+        ...current,
+        phone_country:
+          countryCode,
+        phone_number:
+          '',
+      })
+    );
+  }
+
+  function updatePhoneNumber(
+    value
+  ) {
+    const formatted =
+      buildInternationalPhone(
+        contact.phone_country,
+        value
+      );
+
+    setContact(
+      (current) => ({
+        ...current,
+        phone_number:
+          formatted,
+      })
+    );
+  }
+
+  /* =======================================================
+     CONTACT
   ======================================================= */
 
   function updateContact(
@@ -657,7 +844,7 @@ function CheckoutContent() {
   }
 
   /* =======================================================
-     PASSENGER VALIDATION
+     VALIDATE PASSENGER
   ======================================================= */
 
   function validatePassenger(
@@ -747,6 +934,14 @@ function CheckoutContent() {
       }
     }
 
+    /* NATIONALITY */
+
+    if (
+      !passenger.nationality
+    ) {
+      return `Please select nationality for Passenger ${number}.`;
+    }
+
     /* PASSPORT */
 
     if (
@@ -799,14 +994,6 @@ function CheckoutContent() {
           return `Passport for Passenger ${number} must be valid for at least 6 months after the departure date.`;
         }
       }
-    }
-
-    /* NATIONALITY */
-
-    if (
-      !passenger.nationality
-    ) {
-      return `Please select nationality for Passenger ${number}.`;
     }
 
     return '';
@@ -880,15 +1067,6 @@ function CheckoutContent() {
       return;
     }
 
-    /*
-      PhoneInput gives us
-      international format such as:
-
-      +447123456789
-      +919876543210
-      +351912345678
-    */
-
     if (
       !contact.phone_number.startsWith(
         '+'
@@ -901,7 +1079,9 @@ function CheckoutContent() {
       return;
     }
 
-    /* SAVE PASSENGERS */
+    /*
+      Save passenger data
+    */
 
     sessionStorage.setItem(
       'tripScannerPassengers',
@@ -910,16 +1090,28 @@ function CheckoutContent() {
       )
     );
 
-    /* SAVE CONTACT */
+    /*
+      Save contact.
+
+      phone_number is already
+      in international format.
+    */
 
     sessionStorage.setItem(
       'tripScannerContact',
       JSON.stringify(
-        contact
+        {
+          email:
+            contact.email.trim(),
+          phone_number:
+            contact.phone_number,
+        }
       )
     );
 
-    /* SAVE OFFER */
+    /*
+      Save offer
+    */
 
     sessionStorage.setItem(
       'tripScannerOfferId',
@@ -928,7 +1120,9 @@ function CheckoutContent() {
       ) || ''
     );
 
-    /* GO PAYMENT */
+    /*
+      Payment
+    */
 
     router.push(
       `/payment?offerId=${encodeURIComponent(
@@ -971,7 +1165,9 @@ function CheckoutContent() {
 
       <div className="checkout-grid">
 
-        {/* LEFT */}
+        {/* =================================================
+            LEFT
+        ================================================== */}
 
         <section>
 
@@ -1012,9 +1208,9 @@ function CheckoutContent() {
               </div>
             )}
 
-            {/* =============================================
+            {/* =================================================
                 PASSENGERS
-            ============================================== */}
+            ================================================== */}
 
             {passengers.map(
               (
@@ -1280,6 +1476,7 @@ function CheckoutContent() {
                             (
                               country
                             ) => (
+
                               <option
                                 key={
                                   country[0]
@@ -1288,11 +1485,23 @@ function CheckoutContent() {
                                   country[0]
                                 }
                               >
-                                {country[1]} (
+
+                                {flag(
+                                  country[0]
+                                )}{' '}
+
+                                {
+                                  country[1]
+                                }{' '}
+
+                                (
                                 {
                                   country[0]
-                                })
+                                }
+                                )
+
                               </option>
+
                             )
                           )}
 
@@ -1300,7 +1509,7 @@ function CheckoutContent() {
 
                       </label>
 
-                      {/* PASSPORT NUMBER */}
+                      {/* PASSPORT */}
 
                       <label>
 
@@ -1356,9 +1565,11 @@ function CheckoutContent() {
                               '#64748b',
                           }}
                         >
+
                           Minimum 6 months
                           after departure
                           date.
+
                         </small>
 
                       </label>
@@ -1370,15 +1581,17 @@ function CheckoutContent() {
               }
             )}
 
-            {/* =============================================
+            {/* =================================================
                 CONTACT
-            ============================================== */}
+            ================================================== */}
 
             <div
               className="contact-section"
               style={{
-                marginTop: '32px',
-                padding: '24px',
+                marginTop:
+                  '32px',
+                padding:
+                  '24px',
                 borderRadius:
                   '16px',
                 background:
@@ -1424,30 +1637,87 @@ function CheckoutContent() {
 
                 </label>
 
-                {/* PHONE */}
+                {/* PHONE COUNTRY */}
+
+                <label>
+
+                  Phone country *
+
+                  <select
+                    value={
+                      contact.phone_country
+                    }
+                    onChange={(e) =>
+                      updatePhoneCountry(
+                        e.target.value
+                      )
+                    }
+                    required
+                  >
+
+                    {COUNTRIES.map(
+                      (
+                        country
+                      ) => (
+
+                        <option
+                          key={
+                            country[0]
+                          }
+                          value={
+                            country[0]
+                          }
+                        >
+
+                          {flag(
+                            country[0]
+                          )}{' '}
+
+                          {
+                            country[1]
+                          }
+
+                          {' '}
+
+                          (
+                          {
+                            country[2]
+                          }
+                          )
+
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                </label>
+
+                {/* PHONE NUMBER */}
 
                 <label>
 
                   Phone number *
 
-                  <PhoneInput
-                    international
-                    defaultCountry="GB"
-                    countryCallingCodeEditable={
-                      true
-                    }
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="Enter phone number"
                     value={
                       contact.phone_number
+                        ? contact.phone_number.replace(
+                            /^\+\d+/,
+                            ''
+                          )
+                        : ''
                     }
-                    onChange={(
-                      value
-                    ) =>
-                      updateContact(
-                        'phone_number',
-                        value || ''
+                    onChange={(e) =>
+                      updatePhoneNumber(
+                        e.target.value
                       )
                     }
-                    placeholder="Enter phone number"
+                    required
                   />
 
                   <small
@@ -1460,9 +1730,11 @@ function CheckoutContent() {
                         '#64748b',
                     }}
                   >
-                    Select country and
-                    enter your phone
-                    number.
+
+                    Your number will be
+                    saved in international
+                    format.
+
                   </small>
 
                 </label>
@@ -1488,9 +1760,9 @@ function CheckoutContent() {
 
         </section>
 
-        {/* ===============================================
-            BOOKING SUMMARY
-        ================================================ */}
+        {/* =================================================
+            SUMMARY
+        ================================================== */}
 
         <aside className="summary">
 
