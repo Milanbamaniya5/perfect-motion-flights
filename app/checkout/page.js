@@ -16,25 +16,14 @@ import {
    MONEY
 ============================================= */
 
-function money(
-  amount,
-  currency
-) {
+function money(amount, currency) {
   try {
-    return new Intl.NumberFormat(
-      'en-GB',
-      {
-        style: 'currency',
-        currency:
-          currency || 'GBP',
-      }
-    ).format(
-      Number(amount)
-    );
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: currency || 'GBP',
+    }).format(Number(amount));
   } catch {
-    return `${
-      currency || 'GBP'
-    } ${amount}`;
+    return `${currency || 'GBP'} ${amount}`;
   }
 }
 
@@ -45,9 +34,7 @@ function money(
 function time(value) {
   if (!value) return '—';
 
-  return new Date(
-    value
-  ).toLocaleTimeString(
+  return new Date(value).toLocaleTimeString(
     'en-GB',
     {
       hour: '2-digit',
@@ -67,24 +54,17 @@ function parseDate(value) {
     `${value}T00:00:00`
   );
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return null;
   }
 
   return date;
 }
 
-function formatDateInput(
-  date
-) {
+function formatDateInput(date) {
   if (!date) return '';
 
-  const year =
-    date.getFullYear();
+  const year = date.getFullYear();
 
   const month = String(
     date.getMonth() + 1
@@ -97,51 +77,37 @@ function formatDateInput(
   return `${year}-${month}-${day}`;
 }
 
-function addMonths(
-  date,
-  months
-) {
-  const result =
-    new Date(date);
+function addMonths(date, months) {
+  const result = new Date(date);
 
   result.setMonth(
-    result.getMonth() +
-      months
+    result.getMonth() + months
   );
 
   return result;
 }
 
-function subtractYears(
-  date,
-  years
-) {
-  const result =
-    new Date(date);
+function subtractYears(date, years) {
+  const result = new Date(date);
 
   result.setFullYear(
-    result.getFullYear() -
-      years
+    result.getFullYear() - years
   );
 
   return result;
 }
 
 /* =============================================
-   AGE
+   AGE CALCULATION
 ============================================= */
 
 function calculateAgeOnDate(
   dobString,
   travelDateString
 ) {
-  const dob =
-    parseDate(dobString);
-
+  const dob = parseDate(dobString);
   const travelDate =
-    parseDate(
-      travelDateString
-    );
+    parseDate(travelDateString);
 
   if (!dob || !travelDate) {
     return null;
@@ -170,40 +136,29 @@ function calculateAgeOnDate(
 }
 
 /* =============================================
-   INFANT AGE
+   INFANT AGE TEXT
 ============================================= */
 
 function infantAgeText(age) {
   return Number(age) === 0
-    ? 'Under 1 year'
+    ? 'under 1 year'
     : '1 year';
 }
 
 /* =============================================
-   LABEL
+   PASSENGER LABEL
 ============================================= */
 
-function passengerLabel(
-  passenger
-) {
-  if (
-    passenger.type ===
-    'adult'
-  ) {
+function passengerLabel(passenger) {
+  if (passenger.type === 'adult') {
     return 'Adult · 18+';
   }
 
-  if (
-    passenger.type ===
-    'child'
-  ) {
+  if (passenger.type === 'child') {
     return `Child · age ${passenger.age}`;
   }
 
-  if (
-    passenger.type ===
-    'infant'
-  ) {
+  if (passenger.type === 'infant') {
     return `Infant · ${infantAgeText(
       passenger.age
     )}`;
@@ -221,9 +176,7 @@ function getDobRange(
   departureDate
 ) {
   const travelDate =
-    parseDate(
-      departureDate
-    );
+    parseDate(departureDate);
 
   if (!travelDate) {
     return {
@@ -232,108 +185,92 @@ function getDobRange(
     };
   }
 
-  /* ADULT */
+  /* ADULT — 18+ */
 
-  if (
-    passenger.type ===
-    'adult'
-  ) {
+  if (passenger.type === 'adult') {
+    const latestDob =
+      subtractYears(
+        travelDate,
+        18
+      );
+
+    const earliestDob =
+      subtractYears(
+        travelDate,
+        100
+      );
+
     return {
-      min:
-        formatDateInput(
-          subtractYears(
-            travelDate,
-            100
-          )
-        ),
-
-      max:
-        formatDateInput(
-          subtractYears(
-            travelDate,
-            18
-          )
-        ),
+      min: formatDateInput(
+        earliestDob
+      ),
+      max: formatDateInput(
+        latestDob
+      ),
     };
   }
 
-  /* CHILD */
+  /* CHILD — EXACT SELECTED AGE */
 
-  if (
-    passenger.type ===
-    'child'
-  ) {
-    const age =
-      Number(
-        passenger.age
-      );
+  if (passenger.type === 'child') {
+    const selectedAge =
+      Number(passenger.age);
 
-    const max =
+    const latestDob =
       subtractYears(
         travelDate,
-        age
+        selectedAge
       );
 
-    const min =
+    const earliestDob =
       subtractYears(
         travelDate,
-        age + 1
+        selectedAge + 1
       );
 
-    min.setDate(
-      min.getDate() + 1
+    earliestDob.setDate(
+      earliestDob.getDate() + 1
     );
 
     return {
-      min:
-        formatDateInput(
-          min
-        ),
-
-      max:
-        formatDateInput(
-          max
-        ),
+      min: formatDateInput(
+        earliestDob
+      ),
+      max: formatDateInput(
+        latestDob
+      ),
     };
   }
 
-  /* INFANT */
+  /* INFANT — UNDER 2 */
 
-  if (
-    passenger.type ===
-    'infant'
-  ) {
-    const age =
-      Number(
-        passenger.age
-      );
+  if (passenger.type === 'infant') {
+    const selectedAge =
+      Number(passenger.age);
 
-    const max =
+    const latestDob =
       subtractYears(
         travelDate,
-        age
+        selectedAge
       );
 
-    const min =
+    const earliestDob =
       subtractYears(
         travelDate,
-        age + 1
+        selectedAge + 1
       );
 
-    min.setDate(
-      min.getDate() + 1
+    earliestDob.setDate(
+      earliestDob.getDate() + 1
     );
 
     return {
-      min:
-        formatDateInput(
-          min
-        ),
-
-      max:
-        formatDateInput(
-          max
-        ),
+      min: formatDateInput(
+        earliestDob
+      ),
+      max: formatDateInput(
+        latestDob
+      ),
     };
   }
 
@@ -344,7 +281,92 @@ function getDobRange(
 }
 
 /* =============================================
-   FIELD STATUS
+   PHONE RULES
+============================================= */
+
+function getPhoneRules(country) {
+  const rules = {
+    GB: {
+      code: '+44',
+      digits: 10,
+      label:
+        'UK number must contain 10 digits after +44 and start with 7.',
+      pattern: /^7\d{9}$/,
+    },
+
+    IN: {
+      code: '+91',
+      digits: 10,
+      label:
+        'India mobile number must contain 10 digits and start with 6–9.',
+      pattern: /^[6-9]\d{9}$/,
+    },
+
+    PT: {
+      code: '+351',
+      digits: 9,
+      label:
+        'Portugal number must contain 9 digits.',
+      pattern: /^[29]\d{8}$/,
+    },
+
+    US: {
+      code: '+1',
+      digits: 10,
+      label:
+        'US number must contain 10 digits.',
+      pattern: /^[2-9]\d{9}$/,
+    },
+  };
+
+  return (
+    rules[country] ||
+    rules.GB
+  );
+}
+
+/* =============================================
+   PHONE CLEAN
+============================================= */
+
+function cleanPhone(value) {
+  return String(value || '')
+    .replace(/\D/g, '');
+}
+
+/* =============================================
+   PHONE VALIDATION
+============================================= */
+
+function validatePhone(
+  country,
+  value
+) {
+  const rules =
+    getPhoneRules(country);
+
+  const digits =
+    cleanPhone(value);
+
+  return (
+    digits.length ===
+      rules.digits &&
+    rules.pattern.test(digits)
+  );
+}
+
+/* =============================================
+   EMAIL VALIDATION
+============================================= */
+
+function validateEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    String(value || '').trim()
+  );
+}
+
+/* =============================================
+   FIELD STYLE
 ============================================= */
 
 function fieldStyle(
@@ -357,8 +379,7 @@ function fieldStyle(
         '2px solid #16a34a',
       background:
         '#f0fdf4',
-      outline:
-        'none',
+      outline: 'none',
     };
   }
 
@@ -368,8 +389,7 @@ function fieldStyle(
         '2px solid #dc2626',
       background:
         '#fef2f2',
-      outline:
-        'none',
+      outline: 'none',
     };
   }
 
@@ -387,38 +407,31 @@ function CheckoutContent() {
   const sp =
     useSearchParams();
 
-  const [
-    offer,
-    setOffer,
-  ] = useState(null);
+  const [offer, setOffer] =
+    useState(null);
 
-  const [
-    passengers,
-    setPassengers,
-  ] = useState([]);
+  const [passengers, setPassengers] =
+    useState([]);
 
-  const [
-    contact,
-    setContact,
-  ] = useState({
-    email: '',
-    phone_number: '',
-  });
+  const [contact, setContact] =
+    useState({
+      email: '',
+      phone_country: 'GB',
+      phone_number: '',
+    });
 
   const [error, setError] =
     useState('');
 
   /* ===========================================
-     URL PASSENGERS
+     PASSENGER COUNTS
   =========================================== */
 
   const adults =
     Math.max(
       1,
       Number(
-        sp.get(
-          'adults'
-        ) || 1
+        sp.get('adults') || 1
       )
     );
 
@@ -426,16 +439,14 @@ function CheckoutContent() {
     sp
       .getAll('childAge')
       .filter(
-        (age) =>
-          age !== ''
+        (age) => age !== ''
       );
 
   const infantAges =
     sp
       .getAll('infantAge')
       .filter(
-        (age) =>
-          age !== ''
+        (age) => age !== ''
       );
 
   /* ===========================================
@@ -444,14 +455,11 @@ function CheckoutContent() {
 
   useEffect(() => {
     const offerId =
-      sp.get(
-        'offerId'
-      );
+      sp.get('offerId');
 
-    const passengerList =
-      [];
+    const passengerList = [];
 
-    /* ADULT */
+    /* ADULTS */
 
     for (
       let i = 0;
@@ -473,7 +481,7 @@ function CheckoutContent() {
       });
     }
 
-    /* CHILD */
+    /* CHILDREN */
 
     childAges.forEach(
       (age) => {
@@ -493,12 +501,13 @@ function CheckoutContent() {
       }
     );
 
-    /* INFANT */
+    /* INFANTS */
 
     infantAges.forEach(
       (age) => {
         passengerList.push({
           type: 'infant',
+
           age:
             Number(age) === 1
               ? 1
@@ -533,9 +542,7 @@ function CheckoutContent() {
             response.json()
         )
         .then((data) => {
-          if (
-            data.offer
-          ) {
+          if (data.offer) {
             setOffer(
               data.offer
             );
@@ -560,7 +567,7 @@ function CheckoutContent() {
   ]);
 
   /* ===========================================
-     DEPARTURE
+     DEPARTURE DATE
   =========================================== */
 
   const departureDate =
@@ -589,7 +596,7 @@ function CheckoutContent() {
       : '';
 
   /* ===========================================
-     UPDATE
+     UPDATE PASSENGER
   =========================================== */
 
   function updatePassenger(
@@ -617,6 +624,10 @@ function CheckoutContent() {
     setError('');
   }
 
+  /* ===========================================
+     UPDATE CONTACT
+  =========================================== */
+
   function updateContact(
     field,
     value
@@ -639,6 +650,17 @@ function CheckoutContent() {
   function validatePassenger(
     passenger
   ) {
+    if (
+      !passenger.given_name ||
+      !passenger.family_name
+    ) {
+      return {
+        valid: false,
+        message:
+          'First name and last name are required.',
+      };
+    }
+
     if (
       !passenger.born_on
     ) {
@@ -673,6 +695,8 @@ function CheckoutContent() {
         departureDate
       );
 
+    /* ADULT */
+
     if (
       passenger.type ===
       'adult'
@@ -685,6 +709,8 @@ function CheckoutContent() {
         };
       }
     }
+
+    /* CHILD */
 
     if (
       passenger.type ===
@@ -703,6 +729,8 @@ function CheckoutContent() {
         };
       }
     }
+
+    /* INFANT */
 
     if (
       passenger.type ===
@@ -734,6 +762,8 @@ function CheckoutContent() {
         };
       }
     }
+
+    /* PASSPORT EXPIRY */
 
     if (
       !passenger.passport_expiry_date
@@ -792,29 +822,12 @@ function CheckoutContent() {
   }
 
   /* ===========================================
-     PASSENGER STATUS
+     PASSENGER FIELD STATUS
   =========================================== */
 
   function getPassengerStatus(
     passenger
   ) {
-    const result =
-      validatePassenger(
-        passenger
-      );
-
-    if (
-      !passenger.born_on &&
-      !passenger.passport_expiry_date
-    ) {
-      return {
-        dobValid: false,
-        expiryValid: false,
-        dobError: false,
-        expiryError: false,
-      };
-    }
-
     const dob =
       parseDate(
         passenger.born_on
@@ -825,8 +838,7 @@ function CheckoutContent() {
         departureDate
       );
 
-    let dobValid =
-      false;
+    let dobValid = false;
 
     if (
       dob &&
@@ -912,14 +924,11 @@ function CheckoutContent() {
           passenger.passport_expiry_date
         ) &&
         !expiryValid,
-
-      overall:
-        result.valid,
     };
   }
 
   /* ===========================================
-     ALL VALID?
+     ALL PASSENGERS VALID
   =========================================== */
 
   const allPassengersValid =
@@ -932,28 +941,38 @@ function CheckoutContent() {
       }
 
       return passengers.every(
-        (passenger) => {
-          const result =
-            validatePassenger(
-              passenger
-            );
-
-          return result.valid;
-        }
+        (passenger) =>
+          validatePassenger(
+            passenger
+          ).valid
       );
     }, [
       passengers,
       departureDate,
     ]);
 
-  const contactValid =
-    Boolean(
-      contact.email &&
-        contact.email.includes(
-          '@'
-        ) &&
-        contact.phone_number
+  /* ===========================================
+     CONTACT VALIDATION
+  =========================================== */
+
+  const emailValid =
+    validateEmail(
+      contact.email
     );
+
+  const phoneValid =
+    validatePhone(
+      contact.phone_country,
+      contact.phone_number
+    );
+
+  const contactValid =
+    emailValid &&
+    phoneValid;
+
+  /* ===========================================
+     CONTINUE BUTTON
+  =========================================== */
 
   const canContinue =
     allPassengersValid &&
@@ -968,14 +987,19 @@ function CheckoutContent() {
 
     setError('');
 
+    /* PASSENGERS */
+
     for (
       let i = 0;
       i < passengers.length;
       i++
     ) {
+      const passenger =
+        passengers[i];
+
       const result =
         validatePassenger(
-          passengers[i]
+          passenger
         );
 
       if (!result.valid) {
@@ -984,30 +1008,49 @@ function CheckoutContent() {
         );
         return;
       }
-
-      if (
-        !passengers[i]
-          .given_name ||
-        !passengers[i]
-          .family_name
-      ) {
-        setError(
-          `Please complete Passenger ${
-            i + 1
-          } name.`
-        );
-        return;
-      }
     }
 
-    if (
-      !contactValid
-    ) {
+    /* EMAIL */
+
+    if (!emailValid) {
       setError(
-        'Please enter a valid contact email and phone number.'
+        'Please enter a valid email address.'
       );
       return;
     }
+
+    /* PHONE */
+
+    if (!phoneValid) {
+      setError(
+        getPhoneRules(
+          contact.phone_country
+        ).label
+      );
+      return;
+    }
+
+    /* FORMAT CONTACT */
+
+    const phoneRules =
+      getPhoneRules(
+        contact.phone_country
+      );
+
+    const formattedContact = {
+      email:
+        contact.email.trim(),
+
+      phone_number:
+        `${phoneRules.code}${cleanPhone(
+          contact.phone_number
+        )}`,
+
+      phone_country:
+        contact.phone_country,
+    };
+
+    /* SAVE PASSENGERS */
 
     sessionStorage.setItem(
       'tripScannerPassengers',
@@ -1016,12 +1059,16 @@ function CheckoutContent() {
       )
     );
 
+    /* SAVE CONTACT */
+
     sessionStorage.setItem(
       'tripScannerContact',
       JSON.stringify(
-        contact
+        formattedContact
       )
     );
+
+    /* SAVE OFFER */
 
     sessionStorage.setItem(
       'tripScannerOfferId',
@@ -1029,6 +1076,8 @@ function CheckoutContent() {
         'offerId'
       ) || ''
     );
+
+    /* PAYMENT */
 
     router.push(
       `/payment?offerId=${encodeURIComponent(
@@ -1040,7 +1089,7 @@ function CheckoutContent() {
   }
 
   /* ===========================================
-     SEGMENTS
+     FLIGHT SEGMENTS
   =========================================== */
 
   const segments =
@@ -1091,9 +1140,7 @@ function CheckoutContent() {
 
           <form
             className="passenger-card"
-            onSubmit={
-              submit
-            }
+            onSubmit={submit}
           >
 
             <h1>
@@ -1111,6 +1158,10 @@ function CheckoutContent() {
                 ⚠ {error}
               </div>
             )}
+
+            {/* =================================
+                PASSENGERS
+            ================================== */}
 
             {passengers.map(
               (
@@ -1165,13 +1216,11 @@ function CheckoutContent() {
                               : '#64748b',
                         }}
                       >
-
                         (
                         {passengerLabel(
                           passenger
                         )}
                         )
-
                       </span>
 
                     </h2>
@@ -1189,9 +1238,7 @@ function CheckoutContent() {
                           value={
                             passenger.given_name
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updatePassenger(
                               index,
                               'given_name',
@@ -1214,9 +1261,7 @@ function CheckoutContent() {
                           value={
                             passenger.family_name
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updatePassenger(
                               index,
                               'family_name',
@@ -1251,9 +1296,7 @@ function CheckoutContent() {
                             status.dobValid,
                             status.dobError
                           )}
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updatePassenger(
                               index,
                               'born_on',
@@ -1342,7 +1385,9 @@ function CheckoutContent() {
 
                               {passenger.type ===
                                 'infant' &&
-                                `Infant must be under 2 years on the departure date.`}
+                                `Infant must be ${infantAgeText(
+                                  passenger.age
+                                )} and under 2 years on the departure date.`}
 
                             </small>
                           )}
@@ -1359,9 +1404,7 @@ function CheckoutContent() {
                           value={
                             passenger.gender
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updatePassenger(
                               index,
                               'gender',
@@ -1393,9 +1436,7 @@ function CheckoutContent() {
                           value={
                             passenger.nationality
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updatePassenger(
                               index,
                               'nationality',
@@ -1417,9 +1458,7 @@ function CheckoutContent() {
                           value={
                             passenger.passport_number
                           }
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updatePassenger(
                               index,
                               'passport_number',
@@ -1449,9 +1488,7 @@ function CheckoutContent() {
                             status.expiryValid,
                             status.expiryError
                           )}
-                          onChange={(
-                            e
-                          ) =>
+                          onChange={(e) =>
                             updatePassenger(
                               index,
                               'passport_expiry_date',
@@ -1515,7 +1552,7 @@ function CheckoutContent() {
                                   '#64748b',
                               }}
                             >
-                              Passport must be valid for at least 6 months after departure.
+                              Must be valid for at least 6 months after departure.
                             </small>
                           )}
 
@@ -1528,7 +1565,9 @@ function CheckoutContent() {
               }
             )}
 
-            {/* CONTACT */}
+            {/* =================================
+                CONTACT INFORMATION
+            ================================== */}
 
             <div
               className="contact-section"
@@ -1562,6 +1601,8 @@ function CheckoutContent() {
 
               <div className="form-grid">
 
+                {/* EMAIL */}
+
                 <label>
 
                   Email address *
@@ -1572,58 +1613,230 @@ function CheckoutContent() {
                     value={
                       contact.email
                     }
-                    style={{
-                      ...(contact.email
-                        ? contact.email.includes(
-                            '@'
-                          )
-                          ? {
-                              border:
-                                '2px solid #16a34a',
-                              background:
-                                '#f0fdf4',
-                            }
-                          : {
-                              border:
-                                '2px solid #dc2626',
-                              background:
-                                '#fef2f2',
-                            }
-                        : {}),
-                    }}
-                    onChange={(
-                      e
-                    ) =>
+                    onChange={(e) =>
                       updateContact(
                         'email',
                         e.target.value
                       )
                     }
+                    style={{
+                      border:
+                        contact.email
+                          ? emailValid
+                            ? '2px solid #16a34a'
+                            : '2px solid #dc2626'
+                          : undefined,
+
+                      background:
+                        contact.email
+                          ? emailValid
+                            ? '#f0fdf4'
+                            : '#fef2f2'
+                          : undefined,
+                    }}
                     required
                   />
 
+                  {contact.email &&
+                    !emailValid && (
+                      <small
+                        style={{
+                          display:
+                            'block',
+                          marginTop:
+                            '6px',
+                          color:
+                            '#dc2626',
+                          fontWeight:
+                            '600',
+                        }}
+                      >
+                        ❌ Please enter a valid email address.
+                      </small>
+                    )}
+
+                  {emailValid && (
+                    <small
+                      style={{
+                        display:
+                          'block',
+                        marginTop:
+                          '6px',
+                        color:
+                          '#16a34a',
+                        fontWeight:
+                          '600',
+                      }}
+                    >
+                      ✓ Email address is valid
+                    </small>
+                  )}
+
                 </label>
+
+                {/* PHONE */}
 
                 <label>
 
                   Phone number *
 
-                  <input
-                    type="tel"
-                    placeholder="+44 7xxx xxxxxx"
-                    value={
-                      contact.phone_number
-                    }
-                    onChange={(
-                      e
-                    ) =>
-                      updateContact(
-                        'phone_number',
-                        e.target.value
-                      )
-                    }
-                    required
-                  />
+                  <div
+                    style={{
+                      display:
+                        'flex',
+
+                      gap:
+                        '8px',
+                    }}
+                  >
+
+                    <select
+                      value={
+                        contact.phone_country
+                      }
+                      onChange={(e) => {
+                        updateContact(
+                          'phone_country',
+                          e.target.value
+                        );
+
+                        updateContact(
+                          'phone_number',
+                          ''
+                        );
+                      }}
+                      style={{
+                        width:
+                          '105px',
+
+                        flexShrink:
+                          0,
+                      }}
+                    >
+
+                      <option value="GB">
+                        🇬🇧 +44
+                      </option>
+
+                      <option value="IN">
+                        🇮🇳 +91
+                      </option>
+
+                      <option value="PT">
+                        🇵🇹 +351
+                      </option>
+
+                      <option value="US">
+                        🇺🇸 +1
+                      </option>
+
+                    </select>
+
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      value={
+                        contact.phone_number
+                      }
+                      placeholder={
+                        contact.phone_country ===
+                        'GB'
+                          ? '7XXXXXXXXX'
+                          : contact.phone_country ===
+                            'IN'
+                          ? '9XXXXXXXXX'
+                          : contact.phone_country ===
+                            'PT'
+                          ? '9XXXXXXXX'
+                          : 'XXXXXXXXXX'
+                      }
+                      onChange={(e) => {
+                        const digits =
+                          cleanPhone(
+                            e.target.value
+                          );
+
+                        const rules =
+                          getPhoneRules(
+                            contact.phone_country
+                          );
+
+                        updateContact(
+                          'phone_number',
+                          digits.slice(
+                            0,
+                            rules.digits
+                          )
+                        );
+                      }}
+                      style={{
+                        flex: 1,
+
+                        border:
+                          contact.phone_number
+                            ? phoneValid
+                              ? '2px solid #16a34a'
+                              : '2px solid #dc2626'
+                            : undefined,
+
+                        background:
+                          contact.phone_number
+                            ? phoneValid
+                              ? '#f0fdf4'
+                              : '#fef2f2'
+                            : undefined,
+                      }}
+                      required
+                    />
+
+                  </div>
+
+                  {contact.phone_number &&
+                    !phoneValid && (
+                      <small
+                        style={{
+                          display:
+                            'block',
+
+                          marginTop:
+                            '6px',
+
+                          color:
+                            '#dc2626',
+
+                          fontWeight:
+                            '600',
+                        }}
+                      >
+                        ❌{' '}
+                        {
+                          getPhoneRules(
+                            contact.phone_country
+                          ).label
+                        }
+                      </small>
+                    )}
+
+                  {phoneValid && (
+                    <small
+                      style={{
+                        display:
+                          'block',
+
+                        marginTop:
+                          '6px',
+
+                        color:
+                          '#16a34a',
+
+                        fontWeight:
+                          '600',
+                      }}
+                    >
+                      ✓ Phone number is valid
+                    </small>
+                  )}
 
                 </label>
 
@@ -1631,7 +1844,9 @@ function CheckoutContent() {
 
             </div>
 
-            {/* CONTINUE */}
+            {/* =================================
+                CONTINUE
+            ================================== */}
 
             <button
               type="submit"
@@ -1654,16 +1869,20 @@ function CheckoutContent() {
                     : 'not-allowed',
               }}
             >
+
               {canContinue
                 ? 'Continue to payment →'
                 : 'Complete passenger details →'}
+
             </button>
 
           </form>
 
         </section>
 
-        {/* SUMMARY */}
+        {/* =================================
+            BOOKING SUMMARY
+        ================================== */}
 
         <aside className="summary">
 
