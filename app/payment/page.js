@@ -11,10 +11,6 @@ import {
   useSearchParams,
 } from 'next/navigation';
 
-/* =========================================
-   MONEY
-========================================= */
-
 function money(amount, currency) {
   try {
     return new Intl.NumberFormat('en-GB', {
@@ -26,386 +22,443 @@ function money(amount, currency) {
   }
 }
 
-/* =========================================
-   TIME
-========================================= */
-
 function time(value) {
   if (!value) return '—';
 
-  return new Date(value).toLocaleTimeString(
-    'en-GB',
-    {
-      hour: '2-digit',
-      minute: '2-digit',
-    }
-  );
+  return new Date(value).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
-
-/* =========================================
-   CARD NUMBER
-========================================= */
-
-function formatCardNumber(value) {
-  const digits = String(value || '')
-    .replace(/\D/g, '')
-    .slice(0, 16);
-
-  return digits
-    .replace(/(.{4})/g, '$1 ')
-    .trim();
-}
-
-/* =========================================
-   EXPIRY MM/YY
-========================================= */
-
-function formatExpiry(value) {
-  const digits = String(value || '')
-    .replace(/\D/g, '')
-    .slice(0, 4);
-
-  if (digits.length <= 2) {
-    return digits;
-  }
-
-  return (
-    digits.slice(0, 2) +
-    '/' +
-    digits.slice(2)
-  );
-}
-
-/* =========================================
-   VALIDATION
-========================================= */
-
-function validCardNumber(value) {
-  const digits = String(value || '')
-    .replace(/\D/g, '');
-
-  return digits.length === 16;
-}
-
-function validExpiry(value) {
-  const match = String(value || '').match(
-    /^(\d{2})\/(\d{2})$/
-  );
-
-  if (!match) {
-    return false;
-  }
-
-  const month = Number(match[1]);
-  const year = Number(match[2]);
-
-  if (month < 1 || month > 12) {
-    return false;
-  }
-
-  const now = new Date();
-
-  const currentMonth =
-    now.getMonth() + 1;
-
-  const currentYear =
-    now.getFullYear() % 100;
-
-  if (year < currentYear) {
-    return false;
-  }
-
-  if (
-    year === currentYear &&
-    month < currentMonth
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-function validCVV(value) {
-  return /^\d{3,4}$/.test(
-    String(value || '')
-  );
-}
-
-function validName(value) {
-  return (
-    String(value || '').trim().length >= 2
-  );
-}
-
-/* =========================================
-   PAYMENT CONTENT
-========================================= */
 
 function PaymentContent() {
-  const sp = useSearchParams();
   const router = useRouter();
+  const sp = useSearchParams();
 
-  const offerId =
-    sp.get('offerId');
+  const offerId = sp.get('offerId');
 
-  const [offer, setOffer] =
-    useState(null);
+  const [offer, setOffer] = useState(null);
+  const [passengers, setPassengers] = useState([]);
+  const [contact, setContact] = useState({
+    email: '',
+    phone_number: '',
+  });
 
-  const [method, setMethod] =
-    useState('card');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [cardName, setCardName] = useState('');
 
-  const [busy, setBusy] =
-    useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('card');
 
-  const [error, setError] =
-    useState('');
-
-  /* CARD DATA */
-
-  const [cardNumber, setCardNumber] =
-    useState('');
-
-  const [expiry, setExpiry] =
-    useState('');
-
-  const [cvv, setCvv] =
-    useState('');
-
-  const [cardholderName, setCardholderName] =
-    useState('');
-
-  const [billingCountry, setBillingCountry] =
-    useState('GB');
-
-  /* =========================================
-     LOAD OFFER
-  ========================================= */
+  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadOffer() {
-      if (!offerId) {
-        setError(
-          'Flight offer is missing.'
+    try {
+      const storedPassengers =
+        sessionStorage.getItem(
+          'tripScannerPassengers'
         );
-        return;
+
+      const storedContact =
+        sessionStorage.getItem(
+          'tripScannerContact'
+        );
+
+      if (storedPassengers) {
+        setPassengers(
+          JSON.parse(storedPassengers)
+        );
       }
 
-      try {
-        const response = await fetch(
-          `/api/payment?offerId=${encodeURIComponent(
-            offerId
-          )}`,
-          {
-            method: 'GET',
-            cache: 'no-store',
-          }
+      if (storedContact) {
+        setContact(
+          JSON.parse(storedContact)
         );
+      }
+    } catch {
+      setError(
+        'Unable to load passenger details.'
+      );
+    }
+  }, []);
 
-        const data =
-          await response.json();
+  useEffect(() => {
+    if (!offerId) {
+      setError('Missing flight offer.');
+      setLoading(false);
+      return;
+    }
 
-        if (cancelled) {
-          return;
-        }
+    fetch(
+      `/api/orders?offerId=${encodeURIComponent(
+        offerId
+      )}`
+    )
+      .then(async (response) => {
+        const data = await response.json();
 
         if (!response.ok) {
           throw new Error(
             data?.error ||
-              'Unable to load payment details.'
+              'Unable to load flight.'
           );
         }
 
-        if (!data?.offer) {
+        return data;
+      })
+      .then((data) => {
+        if (!data.offer) {
           throw new Error(
             'Flight offer could not be loaded.'
           );
         }
 
         setOffer(data.offer);
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err?.message ||
-              'Unable to load payment details.'
-          );
-        }
+      })
+      .catch((err) => {
+        setError(
+          err?.message ||
+            'Unable to load flight.'
+        );
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [offerId]);
+
+  function formatCardNumber(value) {
+    const digits = value
+      .replace(/\D/g, '')
+      .slice(0, 16);
+
+    return digits.replace(
+      /(.{4})/g,
+      '$1 '
+    ).trim();
+  }
+
+  function formatExpiry(value) {
+    const digits = value
+      .replace(/\D/g, '')
+      .slice(0, 4);
+
+    if (digits.length <= 2) {
+      return digits;
+    }
+
+    return `${digits.slice(0, 2)}/${digits.slice(
+      2
+    )}`;
+  }
+
+  function validatePayment() {
+    if (!offerId) {
+      return 'Missing flight offer.';
+    }
+
+    if (!offer) {
+      return 'Flight offer is not loaded yet.';
+    }
+
+    if (
+      !Array.isArray(passengers) ||
+      passengers.length === 0
+    ) {
+      return 'Passenger details are missing.';
+    }
+
+    if (!contact.email) {
+      return 'Contact email is missing.';
+    }
+
+    if (!contact.phone_number) {
+      return 'Contact phone number is missing.';
+    }
+
+    /*
+     * Demo card validation.
+     * This does NOT charge a real card.
+     */
+
+    if (paymentMethod === 'card') {
+      const digits = cardNumber.replace(
+        /\D/g,
+        ''
+      );
+
+      if (digits.length < 12) {
+        return 'Please enter a valid card number.';
+      }
+
+      if (!expiry || expiry.length !== 5) {
+        return 'Please enter card expiry date.';
+      }
+
+      if (!cvc || cvc.length < 3) {
+        return 'Please enter a valid CVC.';
+      }
+
+      if (!cardName.trim()) {
+        return 'Please enter the cardholder name.';
       }
     }
 
-    loadOffer();
+    return '';
+  }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [offerId]);
-
-  /* =========================================
-     VALIDATION STATUS
-  ========================================= */
-
-  const cardNumberEntered =
-    cardNumber.length > 0;
-
-  const expiryEntered =
-    expiry.length > 0;
-
-  const cvvEntered =
-    cvv.length > 0;
-
-  const nameEntered =
-    cardholderName.length > 0;
-
-  const cardNumberValid =
-    validCardNumber(cardNumber);
-
-  const expiryValid =
-    validExpiry(expiry);
-
-  const cvvValid =
-    validCVV(cvv);
-
-  const nameValid =
-    validName(cardholderName);
-
-  const cardComplete =
-    cardNumberValid &&
-    expiryValid &&
-    cvvValid &&
-    nameValid;
-
-  const canPay =
-    Boolean(offer) &&
-    !busy &&
-    (
-      method === 'apple' ||
-      cardComplete
-    );
-
-  /* =========================================
-     DEMO PAYMENT
-  ========================================= */
-
-  async function pay(event) {
+  async function completeBooking(event) {
     event.preventDefault();
+
+    if (booking) return;
 
     setError('');
 
-    if (!offer) {
-      setError(
-        'Flight offer is not available.'
-      );
+    const validationError =
+      validatePayment();
+
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
-    /* CARD CHECK */
-
-    if (method === 'card') {
-      if (!cardNumberValid) {
-        setError(
-          'Please enter a valid 16-digit card number.'
-        );
-        return;
-      }
-
-      if (!expiryValid) {
-        setError(
-          'Please enter a valid card expiry date in MM/YY format.'
-        );
-        return;
-      }
-
-      if (!cvvValid) {
-        setError(
-          'Please enter a valid 3 or 4 digit CVV.'
-        );
-        return;
-      }
-
-      if (!nameValid) {
-        setError(
-          'Please enter the cardholder name.'
-        );
-        return;
-      }
-    }
-
-    setBusy(true);
+    setBooking(true);
 
     try {
       /*
-       * TEMPORARY DEMO PAYMENT
+       * ------------------------------------------------------
+       * DEMO PAYMENT
+       * ------------------------------------------------------
        *
-       * No real payment.
-       * No Duffel order creation.
-       * No card details stored.
+       * No real card is charged.
+       *
+       * After demo payment succeeds we create the REAL
+       * Duffel TEST order using /api/orders.
        */
 
-      const demoOrder = {
-        id:
-          `DEMO-${Date.now()}`,
+      const response = await fetch(
+        '/api/orders',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            offer_id: offerId,
+            passengers:
+              passengers.map((passenger) => ({
+                ...passenger,
 
-        offer_id:
-          offerId,
+                /*
+                 * Contact details are attached to
+                 * passengers where needed by Duffel.
+                 */
+                email:
+                  passenger.email ||
+                  contact.email,
 
-        status:
-          'demo_confirmed',
+                phone_number:
+                  passenger.phone_number ||
+                  contact.phone_number,
+              })),
+          }),
+        }
+      );
 
-        payment_status:
-          'demo_paid',
+      const data =
+        await response.json();
 
-        amount:
-          offer.total_amount,
+      if (!response.ok) {
+        console.error(
+          'Duffel booking failed:',
+          data
+        );
 
-        currency:
-          offer.total_currency,
+        let message =
+          data?.error ||
+          'Duffel booking failed.';
 
-        payment_method:
-          method,
+        if (
+          data?.duffel_errors &&
+          Array.isArray(
+            data.duffel_errors
+          )
+        ) {
+          const details =
+            data.duffel_errors
+              .map(
+                (item) =>
+                  item?.message ||
+                  item?.detail ||
+                  ''
+              )
+              .filter(Boolean)
+              .join(' | ');
+
+          if (details) {
+            message = details;
+          }
+        }
+
+        throw new Error(message);
+      }
+
+      /*
+       * ------------------------------------------------------
+       * ACTUAL DUFFEL ORDER
+       * ------------------------------------------------------
+       */
+
+      const order =
+        data?.data || null;
+
+      const orderId =
+        data?.order_id ||
+        order?.id ||
+        '';
+
+      const bookingReference =
+        data?.booking_reference ||
+        order?.booking_reference ||
+        '';
+
+      if (!orderId) {
+        console.error(
+          'No Duffel order ID returned:',
+          data
+        );
+
+        throw new Error(
+          'Payment completed, but Duffel did not return an order ID.'
+        );
+      }
+
+      /*
+       * Save the REAL Duffel order.
+       */
+
+      const bookingData = {
+        id: orderId,
+
+        order_id: orderId,
+
+        booking_reference:
+          bookingReference,
+
+        offer_id: offerId,
+
+        status: 'confirmed',
+
+        payment_status: 'demo_paid',
+
+        live_mode:
+          data?.live_mode ??
+          order?.live_mode ??
+          false,
+
+        type:
+          data?.type ||
+          order?.type ||
+          'instant',
+
+        total_amount:
+          data?.total_amount ||
+          order?.total_amount ||
+          offer?.total_amount,
+
+        total_currency:
+          data?.total_currency ||
+          order?.total_currency ||
+          offer?.total_currency,
+
+        passengers,
+
+        contact,
 
         created_at:
           new Date().toISOString(),
       };
 
       /*
-       * Save only demo booking information.
-       *
-       * Card number,
-       * expiry and CVV
-       * are NOT saved.
+       * Save for confirmation page.
        */
 
       sessionStorage.setItem(
-        'tripScannerOrder',
+        'tripScannerBooking',
         JSON.stringify(
-          demoOrder
+          bookingData
         )
       );
 
       sessionStorage.setItem(
-        'tripScannerPayment',
-        'demo'
+        'tripScannerOrderId',
+        orderId
       );
+
+      sessionStorage.setItem(
+        'tripScannerBookingReference',
+        bookingReference
+      );
+
+      /*
+       * Save locally for My Bookings page.
+       */
+
+      try {
+        const existing =
+          JSON.parse(
+            localStorage.getItem(
+              'my_flight_bookings'
+            ) || '[]'
+          );
+
+        const updated = [
+          bookingData,
+          ...(Array.isArray(existing)
+            ? existing.filter(
+                (item) =>
+                  item?.id !== orderId
+              )
+            : []),
+        ];
+
+        localStorage.setItem(
+          'my_flight_bookings',
+          JSON.stringify(updated)
+        );
+      } catch (storageError) {
+        console.warn(
+          'Unable to save local booking:',
+          storageError
+        );
+      }
+
+      /*
+       * Go to confirmation.
+       */
 
       router.push(
         `/confirmation?orderId=${encodeURIComponent(
-          demoOrder.id
+          orderId
         )}`
       );
     } catch (err) {
-      setError(
-        err?.message ||
-          'Demo payment failed.'
+      console.error(
+        'Booking error:',
+        err
       );
 
-      setBusy(false);
+      setError(
+        err?.message ||
+          'Unable to complete booking.'
+      );
+
+      setBooking(false);
     }
   }
-
-  /* =========================================
-     FLIGHT SEGMENTS
-  ========================================= */
 
   const segments =
     offer?.slices?.flatMap(
@@ -413,590 +466,370 @@ function PaymentContent() {
         slice.segments || []
     ) || [];
 
-  /* =========================================
-     PAGE
-  ========================================= */
+  if (loading) {
+    return (
+      <main className="loading-box">
+        Loading payment…
+      </main>
+    );
+  }
 
   return (
     <main className="checkout-shell">
-
       <header className="site-header">
-
         <div className="brand">
-          ✈ Trip Scanner{' '}
-          <b>Hub</b>
+          ✈ Trip Scanner <b>Hub</b>
         </div>
 
-        <span>
-          Payment
-        </span>
-
+        <span>Payment</span>
       </header>
 
       <div className="checkout-grid">
-
-        {/* =====================================
-            PAYMENT SECTION
-        ====================================== */}
-
         <section>
-
           <div className="stepbar">
-
-            <span>
-              ✓ Passenger
-            </span>
-
-            <b>
-              2 Payment
-            </b>
-
-            <span>
-              3 Confirmation
-            </span>
-
+            <span>✓ Passenger</span>
+            <b>2 Payment</b>
+            <span>3 Confirmation</span>
           </div>
 
           <form
-            className="payment-card"
-            onSubmit={pay}
+            className="passenger-card"
+            onSubmit={completeBooking}
           >
-
-            <div className="demo-badge">
-              DEMO PAYMENT · No real money will be charged
-            </div>
-
-            <h1>
-              Choose payment method
-            </h1>
+            <h1>Payment</h1>
 
             <p>
-              Your payment page is ready.
-              This is currently a safe demo
-              checkout.
+              Complete your demo payment to
+              confirm the booking.
             </p>
 
-            {/* PAYMENT METHODS */}
-
-            <div className="pay-methods">
-
-              <button
-                type="button"
-                className={
-                  method === 'apple'
-                    ? 'selected'
-                    : ''
-                }
-                onClick={() => {
-                  setMethod('apple');
-                  setError('');
-                }}
-              >
-                 Apple Pay
-                <small>
-                  Demo
-                </small>
-              </button>
-
-              <button
-                type="button"
-                className={
-                  method === 'card'
-                    ? 'selected'
-                    : ''
-                }
-                onClick={() => {
-                  setMethod('card');
-                  setError('');
-                }}
-              >
-                💳 Card
-                <small>
-                  Demo
-                </small>
-              </button>
-
-            </div>
-
-            {/* =================================
-                APPLE PAY
-            ================================== */}
-
-            {method === 'apple' ? (
-
-              <div className="wallet-demo">
-
-                <div className="apple-mark">
-                  
-                </div>
-
-                <b>
-                  Apple Pay
-                </b>
-
-                <span>
-                  Demo wallet payment
-                </span>
-
-              </div>
-
-            ) : (
-
-              /* =================================
-                 CARD
-              ================================== */
-
-              <div className="card-demo">
-
-                {/* CARD NUMBER */}
-
-                <label>
-
-                  Card number
-
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="cc-number"
-                    value={
-                      cardNumber
-                    }
-                    placeholder="4242 4242 4242 4242"
-                    maxLength={19}
-                    onChange={(event) => {
-                      setCardNumber(
-                        formatCardNumber(
-                          event.target.value
-                        )
-                      );
-                      setError('');
-                    }}
-                    style={{
-                      border:
-                        cardNumberEntered
-                          ? cardNumberValid
-                            ? '2px solid #16a34a'
-                            : '2px solid #dc2626'
-                          : undefined,
-
-                      background:
-                        cardNumberEntered
-                          ? cardNumberValid
-                            ? '#f0fdf4'
-                            : '#fef2f2'
-                          : undefined,
-                    }}
-                  />
-
-                  {cardNumberEntered &&
-                    !cardNumberValid && (
-                      <small
-                        style={{
-                          display:
-                            'block',
-                          marginTop:
-                            '5px',
-                          color:
-                            '#dc2626',
-                          fontWeight:
-                            '600',
-                        }}
-                      >
-                        ❌ Enter a valid 16-digit card number.
-                      </small>
-                    )}
-
-                  {cardNumberValid && (
-                    <small
-                      style={{
-                        display:
-                          'block',
-                        marginTop:
-                          '5px',
-                        color:
-                          '#16a34a',
-                        fontWeight:
-                          '600',
-                      }}
-                    >
-                      ✓ Card number is valid
-                    </small>
-                  )}
-
-                </label>
-
-                {/* EXPIRY + CVV */}
-
-                <div className="form-grid">
-
-                  {/* EXPIRY */}
-
-                  <label>
-
-                    Expiry
-
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="cc-exp"
-                      value={
-                        expiry
-                      }
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      onChange={(event) => {
-                        setExpiry(
-                          formatExpiry(
-                            event.target.value
-                          )
-                        );
-                        setError('');
-                      }}
-                      style={{
-                        border:
-                          expiryEntered
-                            ? expiryValid
-                              ? '2px solid #16a34a'
-                              : '2px solid #dc2626'
-                            : undefined,
-
-                        background:
-                          expiryEntered
-                            ? expiryValid
-                              ? '#f0fdf4'
-                              : '#fef2f2'
-                            : undefined,
-                      }}
-                    />
-
-                    {expiryEntered &&
-                      !expiryValid && (
-                        <small
-                          style={{
-                            display:
-                              'block',
-                            marginTop:
-                              '5px',
-                            color:
-                              '#dc2626',
-                            fontWeight:
-                              '600',
-                          }}
-                        >
-                          ❌ Enter a valid expiry date, e.g. 08/29.
-                        </small>
-                      )}
-
-                    {expiryValid && (
-                      <small
-                        style={{
-                          display:
-                            'block',
-                          marginTop:
-                            '5px',
-                          color:
-                            '#16a34a',
-                          fontWeight:
-                            '600',
-                        }}
-                      >
-                        ✓ Expiry date is valid
-                      </small>
-                    )}
-
-                  </label>
-
-                  {/* CVV */}
-
-                  <label>
-
-                    CVV
-
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      autoComplete="cc-csc"
-                      value={cvv}
-                      placeholder="•••"
-                      maxLength={4}
-                      onChange={(event) => {
-                        setCvv(
-                          event.target.value
-                            .replace(
-                              /\D/g,
-                              ''
-                            )
-                            .slice(
-                              0,
-                              4
-                            )
-                        );
-                        setError('');
-                      }}
-                      style={{
-                        border:
-                          cvvEntered
-                            ? cvvValid
-                              ? '2px solid #16a34a'
-                              : '2px solid #dc2626'
-                            : undefined,
-
-                        background:
-                          cvvEntered
-                            ? cvvValid
-                              ? '#f0fdf4'
-                              : '#fef2f2'
-                            : undefined,
-                      }}
-                    />
-
-                    {cvvEntered &&
-                      !cvvValid && (
-                        <small
-                          style={{
-                            display:
-                              'block',
-                            marginTop:
-                              '5px',
-                            color:
-                              '#dc2626',
-                            fontWeight:
-                              '600',
-                          }}
-                        >
-                          ❌ CVV must be 3 or 4 digits.
-                        </small>
-                      )}
-
-                    {cvvValid && (
-                      <small
-                        style={{
-                          display:
-                            'block',
-                          marginTop:
-                            '5px',
-                          color:
-                            '#16a34a',
-                          fontWeight:
-                            '600',
-                        }}
-                      >
-                        ✓ CVV is valid
-                      </small>
-                    )}
-
-                  </label>
-
-                </div>
-
-                {/* CARDHOLDER */}
-
-                <label>
-
-                  Cardholder name
-
-                  <input
-                    type="text"
-                    autoComplete="cc-name"
-                    value={
-                      cardholderName
-                    }
-                    placeholder="Name on card"
-                    onChange={(event) => {
-                      setCardholderName(
-                        event.target.value
-                      );
-                      setError('');
-                    }}
-                    style={{
-                      border:
-                        nameEntered
-                          ? nameValid
-                            ? '2px solid #16a34a'
-                            : '2px solid #dc2626'
-                          : undefined,
-
-                      background:
-                        nameEntered
-                          ? nameValid
-                            ? '#f0fdf4'
-                            : '#fef2f2'
-                          : undefined,
-                    }}
-                  />
-
-                  {nameEntered &&
-                    !nameValid && (
-                      <small
-                        style={{
-                          display:
-                            'block',
-                          marginTop:
-                            '5px',
-                          color:
-                            '#dc2626',
-                          fontWeight:
-                            '600',
-                        }}
-                      >
-                        ❌ Please enter the cardholder name.
-                      </small>
-                    )}
-
-                  {nameValid && (
-                    <small
-                      style={{
-                        display:
-                          'block',
-                        marginTop:
-                          '5px',
-                        color:
-                          '#16a34a',
-                        fontWeight:
-                          '600',
-                      }}
-                    >
-                      ✓ Cardholder name is valid
-                    </small>
-                  )}
-
-                </label>
-
-                {/* BILLING COUNTRY */}
-
-                <label>
-
-                  Billing country
-
-                  <select
-                    value={
-                      billingCountry
-                    }
-                    onChange={(event) =>
-                      setBillingCountry(
-                        event.target.value
-                      )
-                    }
-                  >
-
-                    <option value="GB">
-                      United Kingdom
-                    </option>
-
-                    <option value="IN">
-                      India
-                    </option>
-
-                    <option value="US">
-                      United States
-                    </option>
-
-                    <option value="PT">
-                      Portugal
-                    </option>
-
-                  </select>
-
-                </label>
-
-              </div>
-            )}
-
-            {/* ERROR */}
-
             {error && (
-              <div
-                className="error"
-                style={{
-                  marginTop:
-                    '16px',
-                  wordBreak:
-                    'break-word',
-                }}
-              >
+              <div className="error">
                 ⚠ {error}
               </div>
             )}
 
-            {/* PAY */}
+            {/* PAYMENT METHOD */}
+
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                marginTop: '24px',
+                marginBottom: '24px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setPaymentMethod(
+                    'card'
+                  )
+                }
+                style={{
+                  padding: '14px 22px',
+                  borderRadius: '12px',
+                  border:
+                    paymentMethod ===
+                    'card'
+                      ? '2px solid #111827'
+                      : '1px solid #d1d5db',
+                  background:
+                    paymentMethod ===
+                    'card'
+                      ? '#f8fafc'
+                      : '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                💳 Card
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPaymentMethod(
+                    'applepay'
+                  )
+                }
+                style={{
+                  padding: '14px 22px',
+                  borderRadius: '12px',
+                  border:
+                    paymentMethod ===
+                    'applepay'
+                      ? '2px solid #111827'
+                      : '1px solid #d1d5db',
+                  background:
+                    paymentMethod ===
+                    'applepay'
+                      ? '#f8fafc'
+                      : '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                 Pay
+              </button>
+            </div>
+
+            {paymentMethod ===
+              'card' && (
+              <div
+                style={{
+                  padding: '24px',
+                  borderRadius: '16px',
+                  background:
+                    '#f8fafc',
+                  border:
+                    '1px solid #e2e8f0',
+                }}
+              >
+                <h2
+                  style={{
+                    marginTop: 0,
+                  }}
+                >
+                  Card details
+                </h2>
+
+                <div className="form-grid">
+                  <label>
+                    Cardholder name *
+                    <input
+                      type="text"
+                      placeholder="Name on card"
+                      value={cardName}
+                      onChange={(e) =>
+                        setCardName(
+                          e.target.value
+                        )
+                      }
+                      autoComplete="cc-name"
+                    />
+                  </label>
+
+                  <label>
+                    Card number *
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="4242 4242 4242 4242"
+                      value={cardNumber}
+                      onChange={(e) =>
+                        setCardNumber(
+                          formatCardNumber(
+                            e.target.value
+                          )
+                        )
+                      }
+                      autoComplete="cc-number"
+                    />
+                  </label>
+
+                  <label>
+                    Expiry *
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="MM/YY"
+                      maxLength={5}
+                      value={expiry}
+                      onChange={(e) =>
+                        setExpiry(
+                          formatExpiry(
+                            e.target.value
+                          )
+                        )
+                      }
+                      autoComplete="cc-exp"
+                    />
+                  </label>
+
+                  <label>
+                    CVC *
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      placeholder="123"
+                      maxLength={4}
+                      value={cvc}
+                      onChange={(e) =>
+                        setCvc(
+                          e.target.value
+                            .replace(
+                              /\D/g,
+                              ''
+                            )
+                            .slice(0, 4)
+                        )
+                      }
+                      autoComplete="cc-csc"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {paymentMethod ===
+              'applepay' && (
+              <div
+                style={{
+                  padding: '28px',
+                  borderRadius: '16px',
+                  background:
+                    '#f8fafc',
+                  border:
+                    '1px solid #e2e8f0',
+                  textAlign: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '42px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  
+                </div>
+
+                <h2>
+                  Apple Pay
+                </h2>
+
+                <p>
+                  Demo Apple Pay payment.
+                  No real payment will be
+                  charged.
+                </p>
+              </div>
+            )}
+
+            {/* DEMO NOTICE */}
+
+            <div
+              style={{
+                marginTop: '24px',
+                padding: '16px',
+                borderRadius: '12px',
+                background:
+                  '#fff7ed',
+                border:
+                  '1px solid #fed7aa',
+                color: '#9a3412',
+              }}
+            >
+              <strong>
+                Demo payment mode
+              </strong>
+
+              <p
+                style={{
+                  margin:
+                    '6px 0 0',
+                }}
+              >
+                No real money will be
+                charged. After this demo
+                payment, your booking will
+                be submitted to the Duffel
+                Test Account.
+              </p>
+            </div>
+
+            {/* CONTACT */}
+
+            <div
+              style={{
+                marginTop: '24px',
+                padding: '24px',
+                borderRadius: '16px',
+                background:
+                  '#f8fafc',
+                border:
+                  '1px solid #e2e8f0',
+              }}
+            >
+              <h2>
+                Contact information
+              </h2>
+
+              <div className="form-grid">
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={
+                      contact.email
+                    }
+                    readOnly
+                  />
+                </label>
+
+                <label>
+                  Phone
+                  <input
+                    type="tel"
+                    value={
+                      contact.phone_number
+                    }
+                    readOnly
+                  />
+                </label>
+              </div>
+            </div>
 
             <button
               type="submit"
-              disabled={
-                !canPay
-              }
               className="primary wide"
+              disabled={booking}
               style={{
-                marginTop:
-                  '18px',
-
-                opacity:
-                  canPay
-                    ? 1
-                    : 0.5,
-
-                cursor:
-                  canPay
-                    ? 'pointer'
-                    : 'not-allowed',
+                marginTop: '24px',
+                opacity: booking
+                  ? 0.7
+                  : 1,
+                cursor: booking
+                  ? 'wait'
+                  : 'pointer',
               }}
             >
-              {busy
-                ? 'Processing…'
-                : `Pay ${
-                    offer
-                      ? money(
-                          offer.total_amount,
-                          offer.total_currency
-                        )
-                      : ''
-                  } →`}
+              {booking
+                ? 'Confirming booking…'
+                : `Pay ${offer ? money(
+                    offer.total_amount,
+                    offer.total_currency
+                  ) : ''} & Confirm booking →`}
             </button>
-
-            <div className="secure-note">
-              🔒 Demo mode · No card details are stored or charged.
-            </div>
-
           </form>
-
         </section>
 
-        {/* =================================
-            BOOKING SUMMARY
-        ================================== */}
+        {/* BOOKING SUMMARY */}
 
         <aside className="summary">
-
           <h3>
             Booking summary
           </h3>
 
           {segments.map(
-            (
-              segment,
-              index
-            ) => (
+            (segment, index) => (
               <div
                 className="summary-leg"
                 key={index}
               >
-
                 <b>
                   {time(
                     segment.departing_at
                   )}{' '}
-
                   {
                     segment.origin
                       ?.iata_code
                   }
-
                   {' → '}
-
                   {time(
                     segment.arriving_at
                   )}{' '}
-
                   {
                     segment.destination
                       ?.iata_code
@@ -1007,25 +840,18 @@ function PaymentContent() {
                   {
                     segment
                       .marketing_carrier
-                      ?.name ||
-                    offer?.owner?.name
+                      ?.name
                   }
-
                   {' · '}
-
                   {
-                    segment
-                      .marketing_carrier_flight_number ||
-                    ''
+                    segment.marketing_carrier_flight_number
                   }
                 </small>
-
               </div>
             )
           )}
 
           <div className="total">
-
             <span>
               Total
             </span>
@@ -1037,20 +863,12 @@ function PaymentContent() {
                   offer.total_currency
                 )}
             </strong>
-
           </div>
-
         </aside>
-
       </div>
-
     </main>
   );
 }
-
-/* =========================================
-   EXPORT
-========================================= */
 
 export default function Payment() {
   return (
